@@ -4,6 +4,7 @@ using UnityEngine;
 
 //How to Make 7 Days to Die in Unity - 01 - Marching Cubes by b3agz
 //https://github.com/b3agz/how-to-make-7-days-to-die-in-unity
+//
 
 //LEFT OFF:
 //https://youtu.be/PgZDp5Oih38?t=868
@@ -28,7 +29,7 @@ public class Marching : MonoBehaviour
 
 	List<Vector3Int> EditCellsPositions = new List<Vector3Int>(); //list of cells affected in the edit methods
 
-	bool DEBUG_MARCHING_EN = false; //enable debug marching mode which removes the auto regeneration within the update loop and let's you cycle through cases
+	bool DEBUG_MARCHING_EN = true; //enable debug marching mode which removes the auto regeneration within the update loop and let's you cycle through cases
 
 	private void Start()
     {
@@ -115,6 +116,7 @@ public class Marching : MonoBehaviour
 			//UNCOMMENT FOR USING MARCHING_VOLUME
 			if (Input.GetKeyDown(KeyCode.Comma))
 			{
+				/*
 				ClearMeshData();
 				terrainMap[0, 0, 0] = 1; //define cube corner values manually
 				(float[] cube, int[] EdgesWithVertices, Vector3[] CoordsOfVertices) = MarchCube_Volume(Vector3Int.zero);
@@ -156,6 +158,16 @@ public class Marching : MonoBehaviour
 				int cellCase = 1;
 				bool aboveTerrain = false;
 				Debug.Log("Vt: " + CalculateMarchCellVolume(cellCase, CoordsOfVertices, aboveTerrain)); ;
+				*/
+
+				//New Approach:
+				ClearMeshData();
+				terrainMap[1, 0, 0] = 1; //define cube corner values manually
+				MarchCube(Vector3Int.zero);
+				BuildMesh();
+
+				float cellVolume = TetraCellVolume(Vector3Int.zero);
+				Debug.Log("Cell Volume :" + cellVolume);
 			}
 		}
 
@@ -205,17 +217,35 @@ public class Marching : MonoBehaviour
     }
 
 	//Return volume of tetrahedron as defined from 4 unique points
-	public float CalculateTetrahedronVolume(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+	public float CalculateTetrahedronVolume(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
     {
 		//https://keisan.casio.com/exec/system/1223609147
-		float Vp =
-				  (d.x - a.x) * ((b.y - a.y) * (c.z - a.z) - (b.z - a.z) * (c.y - a.y))
-				+ (d.y - a.y) * ((b.z - a.z) * (c.x - a.x) - (b.x - a.x) * (c.z - a.z))
-				+ (d.z - a.z) * ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+		//float Vp =
+		//		  (d.x - a.x) * ((b.y - a.y) * (c.z - a.z) - (b.z - a.z) * (c.y - a.y))
+		//		+ (d.y - a.y) * ((b.z - a.z) * (c.x - a.x) - (b.x - a.x) * (c.z - a.z))
+		//		+ (d.z - a.z) * ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+		//
+		//float Vt = Vp / 6f;
 
-		float Vt = Vp / 6f;
+		//https://en.wikipedia.org/wiki/Tetrahedron#Volume
+		//setup the inputs for the determinant
+		var a = p0.x - p3.x;
+		var b = p1.x - p3.x;
+		var c = p2.x - p3.x;
+		var d = p0.y - p3.y;
+		var e = p1.y - p3.y;
+		var f = p2.y - p3.y;
+		var g = p0.z - p3.z;
+		var h = p1.z - p3.z;
+		var i = p2.z - p3.z;
 
-		return Vt;
+		//calculate the determinant
+		var DET = a*e*i + b*f*g + c*d*h - a*f*h - b*d*i - c*e*g;
+
+		//volume of tetrahedron is 1/6th the volume of a parallelepiped
+		var vt = Mathf.Abs(DET) / 6;
+
+		return vt;
     }
 
 	void PopulateTerrainMap()
@@ -373,9 +403,12 @@ public class Marching : MonoBehaviour
 				int indice = TetrahedronTable[configIndex, tetraIndex]; //configINdex selects a line from the TriangleTable, edgeIndex indees the singles value in the line
 				Vector3 vertPosition = Vector3.zero;
 
+				if (indice == -1) //stop when you hit a -1 value (which means there are no more triangles to draw)
+					goto AfterLoop;
+
 				if (indice < 12) //if it's an edge vertex
 				{
-					// Get the vertices for the start and end of this edge
+					// Get the vertices for the start and end of this edge					
 					Vector3 vert1 = position + CornerTable[EdgeIndexes[indice, 0]];
 					Vector3 vert2 = position + CornerTable[EdgeIndexes[indice, 1]];
 
@@ -412,16 +445,28 @@ public class Marching : MonoBehaviour
 
 				//Add vertex point to tetrahedron group
 				tetraPoints[p] = vertPosition;
-
+				
 				tetraIndex++;
 			}
 
-			//Add volume of current tetrahedron
-			totalCellVolume = totalCellVolume + CalculateTetrahedronVolume(tetraPoints[0], tetraPoints[1], tetraPoints[3], tetraPoints[3]);
+			//Volume of current tetrahedron
+			float currentTetrahedronVolume = CalculateTetrahedronVolume(tetraPoints[0], tetraPoints[1], tetraPoints[2], tetraPoints[3]);
+
+			//Add to running total volume of the cell
+			totalCellVolume = totalCellVolume + currentTetrahedronVolume;
 		}
 
+		//Point to jump to if/when it sees a -1 in the TetrahedronTable
+		AfterLoop:
 
-		return totalCellVolume;
+		//If cell case is normal return volume, if inverted return 1 - the volume
+		if (CaseInversionTable[configIndex] == 0)
+			return totalCellVolume;
+		if (CaseInversionTable[configIndex] == 1)
+			return 1 - totalCellVolume;
+		else
+			Debug.Log("How did you get here?");
+			return 0;
 	}
 
 
