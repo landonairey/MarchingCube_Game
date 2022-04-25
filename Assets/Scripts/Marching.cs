@@ -4,7 +4,6 @@ using UnityEngine;
 
 //How to Make 7 Days to Die in Unity - 01 - Marching Cubes by b3agz
 //https://github.com/b3agz/how-to-make-7-days-to-die-in-unity
-//
 
 //LEFT OFF:
 //https://youtu.be/PgZDp5Oih38?t=868
