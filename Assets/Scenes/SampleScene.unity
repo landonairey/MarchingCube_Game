@@ -1482,7 +1482,7 @@ MonoBehaviour:
   EditSpherePrefab: {fileID: 3935063228335863928, guid: 0fffeeea3eb088645b6695a901a9201b,
     type: 3}
   editScale: 4
-  editDistance: 10
+  editDistance: 20
   EditVerticesCollectionPrefab: {fileID: 5025156161492414205, guid: 4a6cceab93514bb43a93717461a9da93,
     type: 3}
   EditVertexPrefab: {fileID: 3935063228335863928, guid: 3b89b774c0750c2469400101628613de,
@@ -1507,7 +1507,7 @@ GameObject:
   - component: {fileID: 2120160534}
   m_Layer: 8
   m_Name: MarchingCube
-  m_TagString: Untagged
+  m_TagString: Terrain
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1530,7 +1530,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 0175d6244009431428d2037a93156602, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1574,7 +1574,7 @@ MonoBehaviour:
   terrainSurface: 0.5
   width: 48
   height: 12
-  smoothTerrain: 0
+  smoothTerrain: 1
   flatShaded: 1
   spherePrefab: {fileID: 5520116481947538531, guid: 821058eee345847429228f80b1431746,
     type: 3}

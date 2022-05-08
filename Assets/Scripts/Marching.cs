@@ -28,7 +28,7 @@ public class Marching : MonoBehaviour
 
 	List<Vector3Int> EditCellsPositions = new List<Vector3Int>(); //list of cells affected in the edit methods
 
-	bool DEBUG_MARCHING_EN = true; //enable debug marching mode which removes the auto regeneration within the update loop and let's you cycle through cases
+	bool DEBUG_MARCHING_EN = false; //enable debug marching mode which removes the auto regeneration within the update loop and let's you cycle through cases
 
 	private void Start()
     {
@@ -257,21 +257,28 @@ public class Marching : MonoBehaviour
 
 	void PopulateTerrainMap()
     {
+		float thisHeight;
 		for (int x = 0; x < width + 1; x++)
         {
 			for (int y = 0; y < height + 1; y++)
 			{
 				for (int z = 0; z < width + 1; z++)
 				{
-					//Using clamp to bound PerlinNoise as it intends to return a value 0.0f-1.0f but may sometimes be slightly out of that range
-					//Multipying by height will return a value in the range of 0-height
-					float thisHeight = (float)height * Mathf.Clamp(Mathf.PerlinNoise((float)x / 16f * 1.5f, (float)z / 16f * 1.5f), 0.0f, 1.0f); //the 16f and 1.5f are made up coefficients
 
-					//y points below thisHeight will be negative (below terrain) and y points above thisHeight will be positve and will render 
-					terrainMap[x, y, z] = (float)y - thisHeight;
+					//create a hole in the terrain:
+					if (x > 5 && x < 15 && z > 5 && z < 15)
+						thisHeight = 1f;
+
+					else
+						//Using clamp to bound PerlinNoise as it intends to return a value 0.0f-1.0f but may sometimes be slightly out of that range
+						//Multipying by height will return a value in the range of 0-height					
+						thisHeight = (float)height * Mathf.Clamp(Mathf.PerlinNoise((float)x / 16f * 1.5f, (float)z / 16f * 1.5f), 0.0f, 1.0f); //the 16f and 1.5f are made up coefficients
+
+						//y points below thisHeight will be negative (below terrain) and y points above thisHeight will be positve and will render 
+						terrainMap[x, y, z] = (float)y - thisHeight;
 					
-					//Debug
-					//Debug.Log(thisHeight);
+						//Debug
+						//Debug.Log(thisHeight);
 				}
 			}
 		}
