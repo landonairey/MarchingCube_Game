@@ -8,6 +8,9 @@ using UnityEngine;
 //LEFT OFF:
 //https://youtu.be/PgZDp5Oih38?t=868
 
+//adding new chunk system
+//different change, not related
+
 public class Marching : MonoBehaviour
 {
 	List<Vector3> vertices = new List<Vector3>();
