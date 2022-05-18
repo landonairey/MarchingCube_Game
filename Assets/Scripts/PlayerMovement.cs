@@ -15,7 +15,7 @@ public class PlayerMovement : MonoBehaviour
     public float groundDistance = 0.4f;
     public LayerMask groundMask;
     bool isGrounded;
-    public bool isTerrainEdit = true;
+    public bool isTerrainEdit = false;
     public GameObject EditSpherePrefab;
     GameObject EditSphere;
     public float editScale = 4; //diameter of Edit Sphere
@@ -25,7 +25,8 @@ public class PlayerMovement : MonoBehaviour
     public GameObject EditVerticesCollectionPrefab;
     public GameObject EditVertexPrefab;
 
-    Camera cam; 
+    Camera cam;
+    public WorldGenerator world;
     public LayerMask itemMask;
     public Interactable focus;
 
@@ -122,7 +123,8 @@ public class PlayerMovement : MonoBehaviour
                         this.EditVerticesCollection = Instantiate(EditVerticesCollectionPrefab, Vector3.zero, Quaternion.identity);
 
                         //Find positions of all of the active vertices
-                        EditVerticesPositions = hit.transform.GetComponent<Marching>().FindEditVertices(hit.point, editScale);
+                        //EditVerticesPositions = hit.transform.GetComponent<Chunk>().FindEditVertices(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
+                        EditVerticesPositions = world.GetChunkFromVector3(hit.transform.position).FindEditVertices(hit.point, editScale);
 
                         //Create debug spheres at each vertex location under the EditVerticesCollection parent object
                         foreach (Vector3Int vertLocation in EditVerticesPositions)
@@ -142,10 +144,12 @@ public class PlayerMovement : MonoBehaviour
                         {
                             Debug.Log("Hit Terrain");
                             //hit.transform.GetComponent<Marching>().PlaceTerrain(hit.point);
+                            //world.GetChunkFromVector3(hit.transform.position).PlaceTerrain(hit.point);
 
                             //Edit terrain at every vertex position within the Edit Sphere position
-                            float deltaVol = hit.transform.GetComponent<Marching>().PlaceManyTerrain(hit.point, editScale);
-
+                            //float deltaVol = hit.transform.GetComponent<Chunk>().PlaceManyTerrain(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
+                            float deltaVol = world.GetChunkFromVector3(hit.transform.position).PlaceManyTerrain(hit.point, editScale);
+                            
                             volume = volume + deltaVol; //deltaVol should come through as negative here
                         }
 
@@ -155,7 +159,9 @@ public class PlayerMovement : MonoBehaviour
                             Debug.Log("Hit Terrain");
 
                             //Edit terrain at every vertex position within the Edit Sphere position
-                            float deltaVol = hit.transform.GetComponent<Marching>().RemoveManyTerrain(hit.point, editScale);
+                            //float deltaVol = hit.transform.GetComponent<Chunk>().RemoveManyTerrain(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
+                            float deltaVol = world.GetChunkFromVector3(hit.transform.position).RemoveManyTerrain(hit.point, editScale);
+
                             volume = volume + deltaVol;
                         }
                     }
@@ -269,7 +275,8 @@ public class PlayerMovement : MonoBehaviour
                 if (hit.transform.tag == "Terrain")
                 {
                     Debug.Log("Hit Terrain");
-                    hit.transform.GetComponent<Marching>().DebugTerrain(hit.point);
+                    //hit.transform.GetComponent<Chunk>().DebugTerrain(hit.point); //won't work wihtou Chunk being MonoBehavior
+                    world.GetChunkFromVector3(hit.transform.position).DebugTerrain(hit.point);
                 }
                 else
                     Debug.Log("Not Terrain Clicked");
