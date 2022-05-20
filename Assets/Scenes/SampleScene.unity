@@ -1294,7 +1294,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 043c2bdaf4d7a76409aca13a48c9f16b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  WorldSizeInChunks: 10
+  WorldSizeInChunks: 5
   loadingScreen: {fileID: 324520317}
 --- !u!4 &1549837294
 Transform:
@@ -1601,8 +1601,8 @@ MonoBehaviour:
   isTerrainEdit: 0
   EditSpherePrefab: {fileID: 3935063228335863928, guid: 0fffeeea3eb088645b6695a901a9201b,
     type: 3}
-  editScale: 4
-  editDistance: 20
+  editScale: 10
+  editDistance: 40
   EditVerticesCollectionPrefab: {fileID: 5025156161492414205, guid: 4a6cceab93514bb43a93717461a9da93,
     type: 3}
   EditVertexPrefab: {fileID: 3935063228335863928, guid: 3b89b774c0750c2469400101628613de,

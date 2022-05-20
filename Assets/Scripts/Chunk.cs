@@ -345,6 +345,8 @@ public class Chunk
 
 	void CreateMeshData()
 	{
+		ClearMeshData();
+
 		//looking at the cubes, not the points, so you only need to loop the width number and not the width + 1 numbers
 		for (int x = 0; x < width; x++)
 		{
@@ -356,6 +358,8 @@ public class Chunk
 				}
 			}
 		}
+
+		BuildMesh();
 	}
 
 	//helper function to create a configIndex from cube values from the terrainMap data
@@ -869,7 +873,7 @@ public class Chunk
 
 		//Create list of cells affected by the EditSphere
 		FindEditCells(EditVerticesPositions);
-		Debug.Log("EditCellsPositions: " + EditCellsPositions.Count);
+		//Debug.Log("EditCellsPositions: " + EditCellsPositions.Count);
 
 		//Calculate current volume of terrain of affected cells
 		float currentVolume = FindVolumeOfCells();
@@ -880,7 +884,7 @@ public class Chunk
 			terrainMap[vertLocation.x, vertLocation.y, vertLocation.z] = 0f;
 		}
 
-		Debug.Log("EditVerticesPositions: " + EditVerticesPositions.Count);
+		//Debug.Log("EditVerticesPositions: " + EditVerticesPositions.Count);
 
 		//Calculate new volume of terrain of affected cells
 		float newVolume = FindVolumeOfCells();
@@ -906,7 +910,7 @@ public class Chunk
 
 		//Create list of cells affected by the EditSphere
 		FindEditCells(EditVerticesPositions);
-		Debug.Log("EditCellsPositions: " + EditCellsPositions.Count);
+		//Debug.Log("EditCellsPositions: " + EditCellsPositions.Count);
 
 		//Calculate current volume of terrain of affected cells
 		float currentVolume = FindVolumeOfCells();
@@ -917,7 +921,7 @@ public class Chunk
 			terrainMap[vertLocation.x, vertLocation.y, vertLocation.z] = 1f;
 		}
 		
-		Debug.Log("EditVerticesPositions: " + EditVerticesPositions.Count);
+		//Debug.Log("EditVerticesPositions: " + EditVerticesPositions.Count);
 
 		//Calculate new volume of terrain of affected cells
 		float newVolume = FindVolumeOfCells();

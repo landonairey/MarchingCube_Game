@@ -124,7 +124,9 @@ public class PlayerMovement : MonoBehaviour
 
                         //Find positions of all of the active vertices
                         //EditVerticesPositions = hit.transform.GetComponent<Chunk>().FindEditVertices(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
-                        EditVerticesPositions = world.GetChunkFromVector3(hit.transform.position).FindEditVertices(hit.point, editScale);
+                        //EditVerticesPositions = world.GetChunkFromVector3(hit.transform.position).FindEditVertices(hit.point, editScale);
+                        EditVerticesPositions = world.FindEditVertices(hit.point, editScale); //change to use method from WorldGenerator instead of Chunk
+
 
                         //Create debug spheres at each vertex location under the EditVerticesCollection parent object
                         foreach (Vector3Int vertLocation in EditVerticesPositions)
@@ -149,7 +151,18 @@ public class PlayerMovement : MonoBehaviour
                             //Edit terrain at every vertex position within the Edit Sphere position
                             //float deltaVol = hit.transform.GetComponent<Chunk>().PlaceManyTerrain(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
                             float deltaVol = world.GetChunkFromVector3(hit.transform.position).PlaceManyTerrain(hit.point, editScale);
-                            
+
+                            //FIXIT FLAG
+                            //Need to fix the above call^^
+                            //Send hit.point to WorldGenerator and create EditVerticesPositions list there and EditCellsPositions
+                            //Loop through EditCellsPositions list and call these methods at the appropriate Chunk:
+                            //  TetraCell Volume to get the starting volume
+                            //  modify TerrainMap to write 0's for placing terrain
+                            //  MarchCube to update mesh
+                            //  TetraCell Volume to get new value
+                            //sum up total change in volume and update display
+                            //CreateMeshData for each unique affected Chunk
+
                             volume = volume + deltaVol; //deltaVol should come through as negative here
                         }
 
