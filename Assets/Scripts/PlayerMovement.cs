@@ -150,7 +150,7 @@ public class PlayerMovement : MonoBehaviour
 
                             //Edit terrain at every vertex position within the Edit Sphere position
                             //float deltaVol = hit.transform.GetComponent<Chunk>().PlaceManyTerrain(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
-                            float deltaVol = world.GetChunkFromVector3(hit.transform.position).PlaceManyTerrain(hit.point, editScale);
+                            //float deltaVol = world.GetChunkFromVector3(hit.transform.position).PlaceManyTerrain(hit.point, editScale);
 
                             //FIXIT FLAG
                             //Need to fix the above call^^
@@ -162,6 +162,8 @@ public class PlayerMovement : MonoBehaviour
                             //  TetraCell Volume to get new value
                             //sum up total change in volume and update display
                             //CreateMeshData for each unique affected Chunk
+                            float deltaVol = world.HandlePlaceTerrain(hit.point, editScale);
+
 
                             volume = volume + deltaVol; //deltaVol should come through as negative here
                         }
@@ -169,8 +171,8 @@ public class PlayerMovement : MonoBehaviour
                         // Left click to edit and remove terrain
                         if (Input.GetMouseButtonDown(1))
                         {
-                            Debug.Log("Hit Terrain");
-
+                            //Debug.Log("Hit Terrain");
+                            Debug.Log(string.Format("Hit Position: {0}, {1}, {2} ", hit.transform.position.x, hit.transform.position.y, hit.transform.position.z));
                             //Edit terrain at every vertex position within the Edit Sphere position
                             //float deltaVol = hit.transform.GetComponent<Chunk>().RemoveManyTerrain(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
                             float deltaVol = world.GetChunkFromVector3(hit.transform.position).RemoveManyTerrain(hit.point, editScale);

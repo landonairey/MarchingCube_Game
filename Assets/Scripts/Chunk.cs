@@ -57,7 +57,7 @@ public class Chunk
 		BuildMesh();
 	}
 
-    private void Update()
+    public void Update()
     {
 		// Uncomment these if you want to change the width, height, terrainSurface at run time 
 		/*
@@ -378,7 +378,7 @@ public class Chunk
 
 	//position is the position of the given cube, cube is an array
 	//Compute marching cube algorithm on given cube cell, add vertices and triangles to list
-	void MarchCube(Vector3Int position)
+	public void MarchCube(Vector3Int position)
 	{
 		//Sample terrain values at each corner of the cube
 		float[] cube = new float[8]; //8 corners in a cube
@@ -449,8 +449,10 @@ public class Chunk
 	//Tetrahedralization approach for volume calculation of Marching Cube Cell Configuration
 	//Input position of cell to analyze
 	//Output volume bounded by mesh and cell walls
-	float TetraCellVolume(Vector3Int position)
+	public float TetraCellVolume(Vector3Int position)
 	{
+		position -= chunkPosition; //adjust for chunk system
+
 		float totalCellVolume = 0f;
 
 		//Sample terrain values at each corner of the cube
@@ -939,11 +941,15 @@ public class Chunk
 		// Simple edit single nearest vertex point
 		Vector3Int v3Int = new Vector3Int(Mathf.CeilToInt(pos.x), Mathf.CeilToInt(pos.y), Mathf.CeilToInt(pos.z));
 		v3Int -= chunkPosition; //adjust for chunk system
+
+		//Debug.Log(string.Format("PlaceTerrain Position: {0}, {1}, {2} ", v3Int.x, v3Int.y, v3Int.z));
+
+
 		terrainMap[v3Int.x, v3Int.y, v3Int.z] = 0f;
 
 		
 		//Regenerate Mesh
-		CreateMeshData();
+		//CreateMeshData();
 	}
 
 	public void RemoveTerrain(Vector3 pos)
@@ -951,7 +957,7 @@ public class Chunk
 		Vector3Int v3Int = new Vector3Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
 		v3Int -= chunkPosition; //adjust for chunk system
 		terrainMap[v3Int.x, v3Int.y, v3Int.z] = 1f;
-		CreateMeshData();
+		//CreateMeshData();
 	}
 
 	float SampleTerrain (Vector3Int point)
