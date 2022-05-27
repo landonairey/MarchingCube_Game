@@ -144,27 +144,8 @@ public class PlayerMovement : MonoBehaviour
                         // Left click to edit and place terrain
                         if (Input.GetMouseButtonDown(0))
                         {
-                           // Debug.Log("Hit Terrain");
-                            Debug.Log(string.Format("Hit Position: {0}, {1}, {2} ", hit.transform.position.x, hit.transform.position.y, hit.transform.position.z));
-                            //hit.transform.GetComponent<Marching>().PlaceTerrain(hit.point);
-                            //world.GetChunkFromVector3(hit.transform.position).PlaceTerrain(hit.point);
-
-                            //Edit terrain at every vertex position within the Edit Sphere position
-                            //float deltaVol = hit.transform.GetComponent<Chunk>().PlaceManyTerrain(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
-                            //float deltaVol = world.GetChunkFromVector3(hit.transform.position).PlaceManyTerrain(hit.point, editScale);
-
-                            //FIXIT FLAG
-                            //Need to fix the above call^^
-                            //Send hit.point to WorldGenerator and create EditVerticesPositions list there and EditCellsPositions
-                            //Loop through EditCellsPositions list and call these methods at the appropriate Chunk:
-                            //  TetraCell Volume to get the starting volume
-                            //  modify TerrainMap to write 0's for placing terrain
-                            //  MarchCube to update mesh
-                            //  TetraCell Volume to get new value
-                            //sum up total change in volume and update display
-                            //CreateMeshData for each unique affected Chunk
+                            //Debug.Log(string.Format("Hit Position: {0}, {1}, {2} ", hit.transform.position.x, hit.transform.position.y, hit.transform.position.z));
                             float deltaVol = world.HandleModifyTerrain(hit.point, editScale, 0);
-
 
                             volume = volume + deltaVol; //deltaVol should come through as negative here
                         }
@@ -203,83 +184,6 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        //Left click to interact with item
-        /*
-        if (Input.GetMouseButtonDown(0)) //GetMouseButton will return true every frame the mouse button is down, this leads to multiple events
-        {
-
-                //From iventory character controller script:
-
-                //Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-                //RaycastHit hit;
-
-                //if (Physics.Raycast(ray, out hit, 100, itemMask))
-                //{
-                //    Debug.Log("We hit " + hit.collider.name + " " + hit.point);
-                //    //Check if we hit an interactable
-                //    //If we did, set it as our focus
-
-                //    Interactable interactable = hit.collider.GetComponent<Interactable>();
-                //    if (interactable != null)
-                //    {
-                //        SetFocus(interactable);
-                //    }
-
-                //}
-                //else
-                //{
-                //    //Check if we hit a NON interactable
-                //    //Remove our focus
-
-                //    RemoveFocus();
-
-                //}
-
-
-                //creating ray from camera viewport position
-                Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 1f));
-            RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit))
-            {
-                if (hit.transform.tag == "Terrain")
-                {
-                    Debug.Log("Hit Terrain");
-                    hit.transform.GetComponent<Marching>().PlaceTerrain(hit.point);
-                }
-                else
-                    Debug.Log("Not Terrain Clicked");
-
-            }
-            else
-                Debug.Log("Nothing Clicked");
-        }
-        */
-
-        //Right click to remove terrain
-        /*
-        if (Input.GetMouseButtonDown(1))
-        {
-            //creating ray from camera viewport position
-            Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 1f));
-            RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit))
-            {
-                if (hit.transform.tag == "Terrain")
-                {
-                    Debug.Log("Hit Terrain");
-                    hit.transform.GetComponent<Marching>().RemoveTerrain(hit.point);
-                }
-                else
-                    Debug.Log("Not Terrain Clicked");
-
-            }
-            else
-                Debug.Log("Nothing Clicked");
-        }
-        */
-
         //Middle Mouse Button DEBUG
         if (Input.GetMouseButtonDown(2))
         {
@@ -293,7 +197,8 @@ public class PlayerMovement : MonoBehaviour
                 {
                     Debug.Log("Hit Terrain");
                     //hit.transform.GetComponent<Chunk>().DebugTerrain(hit.point); //won't work wihtou Chunk being MonoBehavior
-                    world.GetChunkFromVector3(hit.transform.position).DebugTerrain(hit.point);
+                    //world.GetChunkFromVector3(hit.transform.position).DebugTerrain(hit.point);
+                    world.DebugTerrain(hit.point); //moved DebugTerrain function to WorldGenerator script
                 }
                 else
                     Debug.Log("Not Terrain Clicked");

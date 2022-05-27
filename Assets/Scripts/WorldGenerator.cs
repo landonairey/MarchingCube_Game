@@ -73,19 +73,22 @@ public class WorldGenerator : MonoBehaviour
             //Get appropriate chunk
             float chunkX = GameData.chunkWidth * Mathf.Floor(EditCellsPositions[i].x / GameData.chunkWidth); //round down to the nearest starting chunk coord
             float chunkZ = GameData.chunkWidth * Mathf.Floor(EditCellsPositions[i].z / GameData.chunkWidth);
-            Debug.Log(string.Format("Current Edit Chunk Position: {0}, {1}, {2} ", chunkX, 0, chunkZ));
+            //Debug.Log(string.Format("Current Edit Chunk Position: {0}, {1}, {2} ", chunkX, 0, chunkZ));
 
             Chunk currentChunk = GetChunkFromVector3(new Vector3(chunkX, 0, chunkZ));
             //AddUniqueEditChunk(currentChunk);
 
             //Get the starting volume
             //Debug.Log(string.Format("Current Edit Cell Position: {0}, {1}, {2} ", EditCellsPositions[i].x, EditCellsPositions[i].y, EditCellsPositions[i].z));
-            startVolume = currentChunk.TetraCellVolume(EditCellsPositions[i]);
+            startVolume = startVolume + currentChunk.TetraCellVolume(EditCellsPositions[i]);
+            //Debug.Log("startVolume: " + startVolume);
         }
 
         // Loop through all EditVerticesPositions list
         for (int i = 0; i < EditVerticesPositions.Count; i++)
         {
+            //Debug.Log(string.Format("Current Edit Vertices Position: {0}, {1}, {2} ", EditVerticesPositions[i].x, EditVerticesPositions[i].y, EditVerticesPositions[i].z));
+
             int remainderX = EditVerticesPositions[i].x % GameData.chunkWidth; //Modulo check of W/E direction
             int remainderZ = EditVerticesPositions[i].z % GameData.chunkWidth; //Modulo check of N/S direction
 
@@ -149,10 +152,10 @@ public class WorldGenerator : MonoBehaviour
             Chunk currentChunk = GetChunkFromVector3(new Vector3(chunkX, 0, chunkZ));
 
             //Get the new volume
-            endVolume = currentChunk.TetraCellVolume(EditCellsPositions[i]);
+            //Debug.Log(string.Format("Current Edit Cell Position: {0}, {1}, {2} ", EditCellsPositions[i].x, EditCellsPositions[i].y, EditCellsPositions[i].z));
+            endVolume = endVolume + currentChunk.TetraCellVolume(EditCellsPositions[i]);
 
-            //change in volume
-            deltaVol = deltaVol + endVolume - startVolume;
+            //Debug.Log("endVolume: " + endVolume);
         }
 
         // Loop through all affected Chunks and generate update their mesh
@@ -162,41 +165,9 @@ public class WorldGenerator : MonoBehaviour
             EditChunks[i].Update();
         }
 
-        /*
-        // Loop through all EditCellsPositions list
-        for (int i = 0; i < EditCellsPositions.Count; i++)
-        {
-            //Get appropriate chunk
-            float chunkX = GameData.chunkWidth * Mathf.Floor(EditCellsPositions[i].x / GameData.chunkWidth); //round down to the nearest starting chunk coord
-            float chunkZ = GameData.chunkWidth * Mathf.Floor(EditCellsPositions[i].z / GameData.chunkWidth);
-            Debug.Log(string.Format("Current Edit Chunk Position: {0}, {1}, {2} ", chunkX, 0, chunkZ));
-
-            Chunk currentChunk = GetChunkFromVector3(new Vector3(chunkX, 0, chunkZ));
-            AddUniqueEditChunk(currentChunk);
-
-            //Get the starting volume
-            //Debug.Log(string.Format("Current Edit Cell Position: {0}, {1}, {2} ", EditCellsPositions[i].x, EditCellsPositions[i].y, EditCellsPositions[i].z));
-            float startVolume = currentChunk.TetraCellVolume(EditCellsPositions[i]);
-
-            //modify TerrainMap to write 0's for placing terrain
-            currentChunk.PlaceTerrain(EditCellsPositions[i]);
-
-            //MarchCube to update mesh
-            //currentChunk.MarchCube(EditCellsPositions[i]);
-
-            //Get the new volume
-            float endVolume = currentChunk.TetraCellVolume(EditCellsPositions[i]);
-
-            //change in volume
-            deltaVol = deltaVol + endVolume - startVolume;
-        }
-
-        // Loop through all affected Chunks and generate update their mesh
-        for (int i = 0; i < EditChunks.Count; i++)
-        {
-            EditChunks[i].Update();
-        }
-        */
+        //change in volume
+        deltaVol = startVolume - endVolume;
+        Debug.Log("deltaVol: " + deltaVol);
 
         return deltaVol;
 
@@ -253,14 +224,14 @@ public class WorldGenerator : MonoBehaviour
             //Debug.Log("vertIndex: " + vertIndex);
             vertIndex = vertIndex + 1;
             //Find 8 cells that share the same vertex and add them to the EditCellsPositions list if they aren't there already
-            Vector3Int Neighbor_0 = new Vector3Int(Mathf.Clamp(vertLocation.x - 1, 0, WorldSizeInChunks * GameData.chunkWidth), Mathf.Clamp(vertLocation.y - 1, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z - 1, 0, WorldSizeInChunks * GameData.chunkWidth));
-            Vector3Int Neighbor_1 = new Vector3Int(Mathf.Clamp(vertLocation.x, 0, WorldSizeInChunks * GameData.chunkWidth), Mathf.Clamp(vertLocation.y - 1, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z - 1, 0, WorldSizeInChunks * GameData.chunkWidth));
-            Vector3Int Neighbor_2 = new Vector3Int(Mathf.Clamp(vertLocation.x - 1, 0, WorldSizeInChunks * GameData.chunkWidth), Mathf.Clamp(vertLocation.y - 1, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z, 0, WorldSizeInChunks * GameData.chunkWidth));
-            Vector3Int Neighbor_3 = new Vector3Int(Mathf.Clamp(vertLocation.x, 0, WorldSizeInChunks * GameData.chunkWidth), Mathf.Clamp(vertLocation.y - 1, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z, 0, WorldSizeInChunks * GameData.chunkWidth));
-            Vector3Int Neighbor_4 = new Vector3Int(Mathf.Clamp(vertLocation.x - 1, 0, WorldSizeInChunks * GameData.chunkWidth), Mathf.Clamp(vertLocation.y, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z - 1, 0, WorldSizeInChunks * GameData.chunkWidth));
-            Vector3Int Neighbor_5 = new Vector3Int(Mathf.Clamp(vertLocation.x, 0, WorldSizeInChunks * GameData.chunkWidth), Mathf.Clamp(vertLocation.y, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z - 1, 0, WorldSizeInChunks * GameData.chunkWidth));
-            Vector3Int Neighbor_6 = new Vector3Int(Mathf.Clamp(vertLocation.x - 1, 0, WorldSizeInChunks * GameData.chunkWidth), Mathf.Clamp(vertLocation.y, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z, 0, WorldSizeInChunks * GameData.chunkWidth));
-            Vector3Int Neighbor_7 = new Vector3Int(Mathf.Clamp(vertLocation.x, 0, WorldSizeInChunks * GameData.chunkWidth), Mathf.Clamp(vertLocation.y, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z, 0, WorldSizeInChunks * GameData.chunkWidth));
+            Vector3Int Neighbor_0 = new Vector3Int(Mathf.Clamp(vertLocation.x - 1, 0, WorldSizeInChunks * GameData.chunkWidth - 1), Mathf.Clamp(vertLocation.y - 1, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z - 1, 0, WorldSizeInChunks * GameData.chunkWidth - 1));
+            Vector3Int Neighbor_1 = new Vector3Int(Mathf.Clamp(vertLocation.x, 0, WorldSizeInChunks * GameData.chunkWidth - 1), Mathf.Clamp(vertLocation.y - 1, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z - 1, 0, WorldSizeInChunks * GameData.chunkWidth - 1));
+            Vector3Int Neighbor_2 = new Vector3Int(Mathf.Clamp(vertLocation.x - 1, 0, WorldSizeInChunks * GameData.chunkWidth - 1), Mathf.Clamp(vertLocation.y - 1, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z, 0, WorldSizeInChunks * GameData.chunkWidth - 1));
+            Vector3Int Neighbor_3 = new Vector3Int(Mathf.Clamp(vertLocation.x, 0, WorldSizeInChunks * GameData.chunkWidth - 1), Mathf.Clamp(vertLocation.y - 1, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z, 0, WorldSizeInChunks * GameData.chunkWidth - 1));
+            Vector3Int Neighbor_4 = new Vector3Int(Mathf.Clamp(vertLocation.x - 1, 0, WorldSizeInChunks * GameData.chunkWidth - 1), Mathf.Clamp(vertLocation.y, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z - 1, 0, WorldSizeInChunks * GameData.chunkWidth - 1));
+            Vector3Int Neighbor_5 = new Vector3Int(Mathf.Clamp(vertLocation.x, 0, WorldSizeInChunks * GameData.chunkWidth - 1), Mathf.Clamp(vertLocation.y, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z - 1, 0, WorldSizeInChunks * GameData.chunkWidth - 1));
+            Vector3Int Neighbor_6 = new Vector3Int(Mathf.Clamp(vertLocation.x - 1, 0, WorldSizeInChunks * GameData.chunkWidth - 1), Mathf.Clamp(vertLocation.y, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z, 0, WorldSizeInChunks * GameData.chunkWidth - 1));
+            Vector3Int Neighbor_7 = new Vector3Int(Mathf.Clamp(vertLocation.x, 0, WorldSizeInChunks * GameData.chunkWidth - 1), Mathf.Clamp(vertLocation.y, 0, GameData.chunkHeight - 1), Mathf.Clamp(vertLocation.z, 0, WorldSizeInChunks * GameData.chunkWidth - 1));
             //Debug.Log(string.Format("Neighbor_0: {0:0.}, {1:0.}, {2:0.}", Neighbor_0.x, Neighbor_0.y, Neighbor_0.z));
 
             AddUniqueEditCellPosition(Neighbor_0);
@@ -272,6 +243,11 @@ public class WorldGenerator : MonoBehaviour
             AddUniqueEditCellPosition(Neighbor_6);
             AddUniqueEditCellPosition(Neighbor_7);
         }
+    }
+
+    private void DebugPrintVector3Int(Vector3Int point)
+    {
+        Debug.Log(string.Format("{0}: {1}, {2}, {3} ", nameof(point), point.x, point.y, point.z));
     }
 
     // MOVING FROM CHUNK SCRIPT TO HERE
@@ -320,7 +296,10 @@ public class WorldGenerator : MonoBehaviour
         float chunkX = GameData.chunkWidth * Mathf.Floor((pos.x + xChunkShift * GameData.chunkWidth) / GameData.chunkWidth); //round down to the nearest starting chunk coord
         float chunkZ = GameData.chunkWidth * Mathf.Floor((pos.z + zChunkShift * GameData.chunkWidth) / GameData.chunkWidth);
 
-        if (chunkX >= 0 & chunkX <= WorldSizeInChunks * GameData.chunkWidth & chunkZ >= 0 & chunkZ <= WorldSizeInChunks * GameData.chunkWidth) //Check if within world
+        //DebugPrintVector3Int(pos);
+        //Debug.Log(string.Format("{0}: {1}, {2}, {3} ", nameof(chunkX), nameof(chunkZ), chunkX, chunkZ));
+
+        if (chunkX >= 0 & chunkX <= (WorldSizeInChunks-1) * GameData.chunkWidth & chunkZ >= 0 & chunkZ <= (WorldSizeInChunks-1) * GameData.chunkWidth) //Check if within world, 0-based
         {
             Chunk chunk = GetChunkFromVector3(new Vector3(chunkX, 0, chunkZ));
             AddUniqueEditChunk(chunk);
@@ -339,5 +318,60 @@ public class WorldGenerator : MonoBehaviour
                 Debug.Log("ERROR: Expected editVal to be 0 or 1");
             }
         }
+    }
+
+    // MOVING FROM CHUNK SCRIPT TO HERE
+    public GameObject spherePrefab;
+    public void DebugTerrain(Vector3 pos)
+    {
+        Debug.Log(pos.x + " " + pos.y + " " + pos.z);
+
+        //Convert world point coord to voxel coord
+        //Vector3 vox_point = WorldToVoxel(pos);
+
+        //Find marching cube cell of the point on the surface that you are looking at
+        //The cube are created all in the +x, +y, +z direction from a starting position using the CornerTable
+        //Therefore if you round down the point vector that you are looking at to the nearest starting cube position,
+        // you can just calculate the cube corners from the CornerTable
+        Vector3Int cube_start_pos = new Vector3Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
+
+        Vector3Int[] cube_pos = new Vector3Int[8]; //8 corners in a cube
+        for (int i = 0; i < 8; i++)
+        {
+            cube_pos[i] = cube_start_pos + GameData.CornerTable[i];
+        }
+
+        //https://gamedev.stackexchange.com/questions/96964/how-to-correctly-draw-a-line-in-unity
+        //https://forum.unity.com/threads/draw-cylinder-between-2-points.23510/
+        //https://answers.unity.com/questions/21174/create-cylinder-primitive-between-2-endpoints.html
+
+        //CreateCylinderBetweenPoints(cube_pos[0], cube_pos[1], 0.05f);
+
+        //Debug.Log("HERE");
+
+        GameObject DebugCube = new GameObject();
+        for (int i = 0; i < 12; i++) //12edges in the cube
+        {
+            CreateCylinderBetweenPoints(cube_pos[GameData.EdgeIndexes[i, 0]], cube_pos[GameData.EdgeIndexes[i, 1]], 0.05f, DebugCube);
+        }
+        var sphere = GameObject.Instantiate(spherePrefab, cube_start_pos, Quaternion.identity); //Instantiate is a function of MonoBehaviors, add GameObject. before Instantiate to use it here
+        sphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+        sphere.transform.parent = DebugCube.transform;
+    }
+
+    // MOVING FROM CHUNK SCRIPT TO HERE
+    //https://answers.unity.com/questions/21174/create-cylinder-primitive-between-2-endpoints.html
+    public GameObject cylinderPrefab; //assumed to be 1m x 1m x 2m default unity cylinder to make calculations easy
+
+    void CreateCylinderBetweenPoints(Vector3 start, Vector3 end, float width, GameObject ParentObject)
+    {
+        var offset = end - start;
+        var scale = new Vector3(width, offset.magnitude / 2.0f, width);
+        var position = start + (offset / 2.0f);
+
+        var cylinder = GameObject.Instantiate(cylinderPrefab, position, Quaternion.identity);  //Instantiate is a function of MonoBehaviors, add GameObject. before Instantiate to use it here
+        cylinder.transform.up = offset;
+        cylinder.transform.localScale = scale;
+        cylinder.transform.parent = ParentObject.transform;
     }
 }

@@ -60,35 +60,14 @@ public class Chunk
     public void Update()
     {
 		// Uncomment these if you want to change the width, height, terrainSurface at run time 
-		/*
-		
-		terrainMap = new float[width + 1, height + 1, width + 1]; //needs to be plus one or you'll get an index out of range error
-		PopulateTerrainMap();
-		*/
-		/* //COMMENT WHEN USING DEBUG_MARCHING
-		ClearMeshData();
-		CreateMeshData();
-		BuildMesh();
-		//*/
-
-		// Uncomment these if you want to change the width, height, terrainSurface at run time 
 		//COMMENT WHEN USING DEBUG_MARCHING
 		if (!DEBUG_MARCHING_EN)
 		{
-			// Uncomment these if you want to change the width, height, terrainSurface at run time 
-			/*
-			terrainMap = new float[width + 1, height + 1, width + 1]; //needs to be plus one or you'll get an index out of range error
-			PopulateTerrainMap();
-			*/
-
 			ClearMeshData();
 			CreateMeshData();
 			BuildMesh();
 		}
 
-
-		//GetComponent<MeshCollider>().sharedMesh = null;
-		//GetComponent<MeshCollider>().sharedMesh = meshFilter.mesh;
 		meshCollider.sharedMesh = null;
 		meshCollider.sharedMesh = meshFilter.mesh;
 
@@ -105,27 +84,6 @@ public class Chunk
 				BuildMesh();
 				Debug.Log(_configIndex);
 				
-
-				/*
-				//https://www.reddit.com/r/Unity3D/comments/flwreg/how_do_i_make_a_trs_matrix_manually/
-				Matrix4x4 testMat = new Matrix4x4(
-				new Vector4(0f, 1f, 0f, 0f),
-				new Vector4(0f, 0f, 1f, 0f),
-				new Vector4(0f, 0f, 0f, 1f),
-				new Vector4(1f, 1f, 1f, 1f));
-
-				float tetrahedronVol = (1 / 6) * testMat.determinant;
-				Debug.Log(tetrahedronVol);
-				
-
-				Vector3 a = new Vector3(0f, 0f, 0f);
-				Vector3 b = new Vector3(1f, 0f, 0f);
-				Vector3 c = new Vector3(0f, 1f, 0f);
-				Vector3 d = new Vector3(0f, 0f, 1f);
-
-				Debug.Log("Vt: " + CalculateTetrahedronVolume(a, b, c, d));
-				*/
-
 				float cellVolume = TetraCellVolume(Vector3Int.zero);
 				Debug.Log("Cell Volume :" + cellVolume);
 
@@ -137,50 +95,6 @@ public class Chunk
 			//UNCOMMENT FOR USING MARCHING_VOLUME
 			if (Input.GetKeyDown(KeyCode.Comma))
 			{
-				/*
-				ClearMeshData();
-				terrainMap[0, 0, 0] = 1; //define cube corner values manually
-				(float[] cube, int[] EdgesWithVertices, Vector3[] CoordsOfVertices) = MarchCube_Volume(Vector3Int.zero);
-				BuildMesh();
-
-				//DEBUG
-				string cubesString = "";
-				for (int i = 0; i < cube.Length; i++)
-				{
-					cubesString += " " + (cube[i]).ToString();
-				}
-
-				string edgeString = "";
-				for (int i = 0; i < EdgesWithVertices.Length; i++)
-				{
-					edgeString += " " + (EdgesWithVertices[i]).ToString();
-				}
-
-				string vposString = "";
-				for (int i = 0; i < CoordsOfVertices.Length; i++)
-				{
-					vposString += " " + (CoordsOfVertices[i]).ToString();
-				}
-
-				Debug.Log("cube :" + cubesString);
-				Debug.Log("edge :" + edgeString);
-				Debug.Log("vpos :" + vposString);
-
-				Vector3 a = new Vector3(0f, 0f, 0f);
-				Vector3 b = CoordsOfVertices[0];
-				Vector3 c = CoordsOfVertices[2];
-				Vector3 d = CoordsOfVertices[1];
-
-				//Debug.Log("CoordsOfVertices[0]: " + CoordsOfVertices[0]);
-				//Debug.Log("CoordsOfVertices[1]: " + CoordsOfVertices[1]);
-				//Debug.Log("CoordsOfVertices[2]: " + CoordsOfVertices[2]);
-				//Debug.Log("Vt: " + CalculateTetrahedronVolume(a, b, c, d));
-
-				int cellCase = 1;
-				bool aboveTerrain = false;
-				Debug.Log("Vt: " + CalculateMarchCellVolume(cellCase, CoordsOfVertices, aboveTerrain)); ;
-				*/
-
 				//New Approach:
 				ClearMeshData();
 				terrainMap[1, 0, 0] = 1; //define cube corner values manually
@@ -240,14 +154,6 @@ public class Chunk
 	//Return volume of tetrahedron as defined from 4 unique points
 	public float CalculateTetrahedronVolume(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
     {
-		//https://keisan.casio.com/exec/system/1223609147
-		//float Vp =
-		//		  (d.x - a.x) * ((b.y - a.y) * (c.z - a.z) - (b.z - a.z) * (c.y - a.y))
-		//		+ (d.y - a.y) * ((b.z - a.z) * (c.x - a.x) - (b.x - a.x) * (c.z - a.z))
-		//		+ (d.z - a.z) * ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
-		//
-		//float Vt = Vp / 6f;
-
 		//https://en.wikipedia.org/wiki/Tetrahedron#Volume
 		//setup the inputs for the determinant
 		var a = p0.x - p3.x;
@@ -298,30 +204,6 @@ public class Chunk
 	//debug function to populate a specified cell configuration at position [0,0,0] int he terrainMap
 	void PopulateTerrainMap_debug(int config)
 	{
-		//byte[] configByte = new byte[8];
-		//BitArray config_bits = new BitArray(config);
-
-		//y points below thisHeight will be negative (below terrain) and y points above thisHeight will be positve and will render 
-		//terrainMap[x, y, z] = (float)y - thisHeight;
-
-		//string bit_str;
-
-		//for (var i = 0; i < config_bits.Length; i++)
-		//{
-		//	bit_str = bit_str + config_bits[i].ToString();
-		//}
-
-		//int checkBit0 = 0x00000001;
-		//bool hasBit0 = (config & checkBit0) == checkBit0;
-		//bool hasBit0 = (config & 0x00000001) != 0;
-
-		//int checkBit1 = 0x00000010;
-		//bool hasBit1 = (config & checkBit1) == checkBit1;
-		//bool hasBit1 = (config & 0x00000010) != 0;
-
-		//int checkBit2 = 0x00000100;
-		//bool hasBit2 = (config & checkBit2) == checkBit2;
-
 		var bits = new BitArray(new int[] { config }); //convert into bit array
 
 		terrainMap[0, 0, 0] = System.Convert.ToInt32(bits.Get(0));
@@ -332,15 +214,6 @@ public class Chunk
 		terrainMap[1, 0, 1] = System.Convert.ToInt32(bits.Get(5));
 		terrainMap[1, 1, 1] = System.Convert.ToInt32(bits.Get(6));
 		terrainMap[0, 1, 1] = System.Convert.ToInt32(bits.Get(7));
-
-		//Debug.Log("config 0 " + bits.Get(0));
-		//Debug.Log("config 1 " + bits.Get(1));
-		//Debug.Log("config 2 " + bits.Get(2));
-		//Debug.Log(string.Format("config byte: {0:0.}, {1:0.}, {2:0.}", System.Convert.ToInt32(bits.Get(2)), System.Convert.ToInt32(bits.Get(1)), System.Convert.ToInt32(bits.Get(0)))); //Use format for better performance);
-		//Debug.Log("config " + config);
-
-
-
 	}
 
 	void CreateMeshData()
@@ -518,7 +391,7 @@ public class Chunk
 				}
 				if (indice > 11) //if it's a cube corner
                 {
-					vertPosition = GameData.CornerTable[indice - 12];
+					vertPosition = position + GameData.CornerTable[indice - 12];
 
 				}
 
@@ -706,7 +579,7 @@ public class Chunk
 
 		//CreateCylinderBetweenPoints(cube_pos[0], cube_pos[1], 0.05f);
 
-		Debug.Log("HERE");
+		//Debug.Log("HERE");
 
 		GameObject DebugCube = new GameObject();
 		for (int i = 0; i < 12; i++) //12edges in the cube
