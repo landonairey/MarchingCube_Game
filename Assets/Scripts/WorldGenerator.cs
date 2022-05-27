@@ -1,6 +1,14 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
+// World Coordinates:
+//         +Z is NORTH
+//      
+// -X is WEST     +X is EAST
+//
+//         -Z is SOUTH
 
 public class WorldGenerator : MonoBehaviour
 {
@@ -40,14 +48,16 @@ public class WorldGenerator : MonoBehaviour
         int y = (int)pos.y;
         int z = (int)pos.z;
 
-        Debug.Log(string.Format("Lookup Chunk Position: {0}, {1}, {2} ", x, y, z));
+        //Debug.Log(string.Format("Lookup Chunk Position: {0}, {1}, {2} ", x, y, z));
         return chunks[new Vector3Int(x, y, z)];
     }
 
-    public float HandlePlaceTerrain(Vector3 pos, float editSphereDiameter)
+    public float HandleModifyTerrain(Vector3 pos, float editSphereDiameter, int editVal)
     {
         //initialize variables
         float deltaVol = 0;
+        float startVolume = 0;
+        float endVolume = 0;
         EditChunks = new List<Chunk>();
         EditCellsPositions = new List<Vector3Int>();
 
@@ -57,6 +67,102 @@ public class WorldGenerator : MonoBehaviour
         //Create list of cells affected by the EditSphere
         FindEditCells(EditVerticesPositions);
 
+        // Loop through all EditCellsPositions list
+        for (int i = 0; i < EditCellsPositions.Count; i++)
+        {
+            //Get appropriate chunk
+            float chunkX = GameData.chunkWidth * Mathf.Floor(EditCellsPositions[i].x / GameData.chunkWidth); //round down to the nearest starting chunk coord
+            float chunkZ = GameData.chunkWidth * Mathf.Floor(EditCellsPositions[i].z / GameData.chunkWidth);
+            Debug.Log(string.Format("Current Edit Chunk Position: {0}, {1}, {2} ", chunkX, 0, chunkZ));
+
+            Chunk currentChunk = GetChunkFromVector3(new Vector3(chunkX, 0, chunkZ));
+            //AddUniqueEditChunk(currentChunk);
+
+            //Get the starting volume
+            //Debug.Log(string.Format("Current Edit Cell Position: {0}, {1}, {2} ", EditCellsPositions[i].x, EditCellsPositions[i].y, EditCellsPositions[i].z));
+            startVolume = currentChunk.TetraCellVolume(EditCellsPositions[i]);
+        }
+
+        // Loop through all EditVerticesPositions list
+        for (int i = 0; i < EditVerticesPositions.Count; i++)
+        {
+            int remainderX = EditVerticesPositions[i].x % GameData.chunkWidth; //Modulo check of W/E direction
+            int remainderZ = EditVerticesPositions[i].z % GameData.chunkWidth; //Modulo check of N/S direction
+
+            //Vertex on Shared Chunk Corner
+            if (remainderX == 0 & remainderZ == 0)
+            {
+                ModifyVertexOnBorder(EditVerticesPositions[i], -1,  0, editVal); //Look North West
+                ModifyVertexOnBorder(EditVerticesPositions[i],  0,  0, editVal); //Look North East
+                ModifyVertexOnBorder(EditVerticesPositions[i],  0, -1, editVal); //Look South East
+                ModifyVertexOnBorder(EditVerticesPositions[i], -1, -1, editVal); //Look South West
+            }
+
+            //Vertex on Shared N/S Chunk Border
+            else if (remainderZ == 0)
+            {
+                ModifyVertexOnBorder(EditVerticesPositions[i], 0,  0, editVal); //Look North
+                ModifyVertexOnBorder(EditVerticesPositions[i], 0, -1, editVal); //Look South
+            }
+
+            //Vertex on Shared W/E Chunk Border
+            else if (remainderX == 0)
+            {
+                ModifyVertexOnBorder(EditVerticesPositions[i], -1, 0, editVal); //Look West
+                ModifyVertexOnBorder(EditVerticesPositions[i],  0, 0, editVal); //Look East
+            }
+
+            //Vertex within single Chunk
+            else
+            {
+                //Get appropriate chunk
+                float chunkX = GameData.chunkWidth * Mathf.Floor(EditVerticesPositions[i].x / GameData.chunkWidth); //round down to the nearest starting chunk coord
+                float chunkZ = GameData.chunkWidth * Mathf.Floor(EditVerticesPositions[i].z / GameData.chunkWidth);
+                Chunk currentChunk = GetChunkFromVector3(new Vector3(chunkX, 0, chunkZ));
+
+                //Add to list
+                AddUniqueEditChunk(currentChunk);
+
+                //modify TerrainMap
+                if (editVal == 0)
+                {
+                    currentChunk.PlaceTerrain(EditVerticesPositions[i]);
+                }
+                else if (editVal == 1)
+                {
+                    currentChunk.RemoveTerrain(EditVerticesPositions[i]);
+                }
+                else
+                {
+                    Debug.Log("ERROR: Expected editVal to be 0 or 1");
+                }
+            }
+
+        }
+
+        // Loop through all EditCellsPositions list
+        for (int i = 0; i < EditCellsPositions.Count; i++)
+        {
+            //Get appropriate chunk
+            float chunkX = GameData.chunkWidth * Mathf.Floor(EditCellsPositions[i].x / GameData.chunkWidth); //round down to the nearest starting chunk coord
+            float chunkZ = GameData.chunkWidth * Mathf.Floor(EditCellsPositions[i].z / GameData.chunkWidth);
+            Chunk currentChunk = GetChunkFromVector3(new Vector3(chunkX, 0, chunkZ));
+
+            //Get the new volume
+            endVolume = currentChunk.TetraCellVolume(EditCellsPositions[i]);
+
+            //change in volume
+            deltaVol = deltaVol + endVolume - startVolume;
+        }
+
+        // Loop through all affected Chunks and generate update their mesh
+        for (int i = 0; i < EditChunks.Count; i++)
+        {
+            //Update terrain mesh
+            EditChunks[i].Update();
+        }
+
+        /*
         // Loop through all EditCellsPositions list
         for (int i = 0; i < EditCellsPositions.Count; i++)
         {
@@ -90,10 +196,14 @@ public class WorldGenerator : MonoBehaviour
         {
             EditChunks[i].Update();
         }
+        */
 
         return deltaVol;
 
     }
+
+
+
 
     // MOVING FROM CHUNK SCRIPT TO HERE
     // scan through all xyz points and flag ones that are within the EditSphere volume
@@ -201,5 +311,33 @@ public class WorldGenerator : MonoBehaviour
         //add to list
         EditChunks.Add(currentChunk);
         return;
+    }
+
+    //Helper function to take in the Vector3Int position of a terrain vertex that's on a Chunk border
+    //Also input the number of chunks to shift the vertex, i.e. -1 xChunkShift to "look" West
+    private void ModifyVertexOnBorder(Vector3Int pos, int xChunkShift, int zChunkShift, int editVal)
+    {
+        float chunkX = GameData.chunkWidth * Mathf.Floor((pos.x + xChunkShift * GameData.chunkWidth) / GameData.chunkWidth); //round down to the nearest starting chunk coord
+        float chunkZ = GameData.chunkWidth * Mathf.Floor((pos.z + zChunkShift * GameData.chunkWidth) / GameData.chunkWidth);
+
+        if (chunkX >= 0 & chunkX <= WorldSizeInChunks * GameData.chunkWidth & chunkZ >= 0 & chunkZ <= WorldSizeInChunks * GameData.chunkWidth) //Check if within world
+        {
+            Chunk chunk = GetChunkFromVector3(new Vector3(chunkX, 0, chunkZ));
+            AddUniqueEditChunk(chunk);
+
+            //modify TerrainMap
+            if (editVal == 0)
+            {
+                chunk.PlaceTerrain(pos);
+            }
+            else if (editVal == 1)
+            {
+                chunk.RemoveTerrain(pos);
+            }
+            else
+            {
+                Debug.Log("ERROR: Expected editVal to be 0 or 1");
+            }
+        }
     }
 }
