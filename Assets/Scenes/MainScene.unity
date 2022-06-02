@@ -1294,7 +1294,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 043c2bdaf4d7a76409aca13a48c9f16b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+<<<<<<< HEAD:Assets/Scenes/MainScene.unity
+<<<<<<< HEAD:Assets/Scenes/MainScene.unity
+<<<<<<< Updated upstream:Assets/Scenes/MainScene.unity
+  WorldSizeInChunks: 10
+=======
+<<<<<<< HEAD:Assets/Scenes/SampleScene.unity
   WorldSizeInChunks: 5
+=======
+  WorldSizeInChunks: 10
+>>>>>>> landonairey/chunk:Assets/Scenes/MainScene.unity
+>>>>>>> Stashed changes:Assets/Scenes/SampleScene.unity
+=======
+  WorldSizeInChunks: 5
+>>>>>>> 4ee8b57981a024f153ad1e77f370f1323115e285:Assets/Scenes/SampleScene.unity
+=======
+  WorldSizeInChunks: 5
+>>>>>>> main:Assets/Scenes/SampleScene.unity
   loadingScreen: {fileID: 324520317}
   spherePrefab: {fileID: 5520116481947538531, guid: 821058eee345847429228f80b1431746,
     type: 3}
@@ -1605,7 +1621,23 @@ MonoBehaviour:
   isTerrainEdit: 0
   EditSpherePrefab: {fileID: 3935063228335863928, guid: 0fffeeea3eb088645b6695a901a9201b,
     type: 3}
+<<<<<<< HEAD:Assets/Scenes/MainScene.unity
+<<<<<<< HEAD:Assets/Scenes/MainScene.unity
+<<<<<<< Updated upstream:Assets/Scenes/MainScene.unity
+  editScale: 10
+=======
+<<<<<<< HEAD:Assets/Scenes/SampleScene.unity
   editScale: 6
+=======
+  editScale: 10
+>>>>>>> landonairey/chunk:Assets/Scenes/MainScene.unity
+>>>>>>> Stashed changes:Assets/Scenes/SampleScene.unity
+=======
+  editScale: 6
+>>>>>>> 4ee8b57981a024f153ad1e77f370f1323115e285:Assets/Scenes/SampleScene.unity
+=======
+  editScale: 6
+>>>>>>> main:Assets/Scenes/SampleScene.unity
   editDistance: 40
   EditVerticesCollectionPrefab: {fileID: 5025156161492414205, guid: 4a6cceab93514bb43a93717461a9da93,
     type: 3}
