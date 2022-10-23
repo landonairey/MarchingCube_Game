@@ -1,8 +1,8 @@
 ﻿Shader "Custom/PostEffectShader"
 {
-    //FROM Unity Tutorial: A Practical Intro to Shaders - Part 1
-    //quill18creates
-    //https://youtu.be/C0uJ4sZelio
+    // FROM Unity Tutorial: A Practical Intro to Shaders - Part 1
+    // quill18creates
+    // https://youtu.be/C0uJ4sZelio
 
     Properties
     {

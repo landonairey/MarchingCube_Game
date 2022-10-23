@@ -1,5 +1,9 @@
 ﻿// Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
+// Unity Tutorial: A Practical Intro to Shaders - Part 2
+// quill18creates
+// https://youtu.be/vKveOrl5Q7U
+
 Shader "Custom/CoolUIShader"
 {
     Properties
