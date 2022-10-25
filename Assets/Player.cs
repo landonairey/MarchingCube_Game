@@ -18,7 +18,7 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Space)) //test the save functionality
+        if(Input.GetKeyDown(KeyCode.RightShift)) //test the save functionality
         {
             Debug.Log("Saving Inventory");
             inventory.Save();
@@ -32,6 +32,7 @@ public class Player : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        inventory.Container.Items.Clear(); //clear the items in the iventory when you exit play
+        //inventory.Container.Items.Clear(); //clear the items in the iventory when you exit play, for Parts 1-4
+        inventory.Container.Items = new InventorySlot[24]; //clears the InventorySlots
     }
 }
