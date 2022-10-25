@@ -8,10 +8,10 @@ public class Player : MonoBehaviour
 
     public void OnTriggerEnter(Collider other)
     {
-        var item = other.GetComponent<Item>();
+        var item = other.GetComponent<GroundItem>();
         if(item) //check if we collided with type item
         {
-            inventory.AddItem(item.item, 1); //add to inventory
+            inventory.AddItem(new Item(item.item), 1); //add to inventory
             Destroy(other.gameObject); //destroy item we just interacted with
         }
     }
@@ -32,6 +32,6 @@ public class Player : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        inventory.Container.Clear(); //clear the items in the iventory when you exit play
+        inventory.Container.Items.Clear(); //clear the items in the iventory when you exit play
     }
 }

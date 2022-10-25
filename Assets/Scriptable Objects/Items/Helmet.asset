@@ -12,8 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e70a56ef759cfc45ba46be440264c6c, type: 3}
   m_Name: Helmet
   m_EditorClassIdentifier: 
-  prefab: {fileID: 2650302270463984751, guid: 0de74e4754045ea4bb02722e8245c043, type: 3}
+  Id: 2
+  uiDisplay: {fileID: 5608727682196630789, guid: db1248032dc382f4bb2a739c2308f155,
+    type: 3}
   type: 1
   description: 
-  atkBonus: 0
-  defenceBonus: 10
+  buffs:
+  - attribute: 0
+    value: 0
+    min: 5
+    max: 12
+  - attribute: 3
+    value: 0
+    min: 4
+    max: 20

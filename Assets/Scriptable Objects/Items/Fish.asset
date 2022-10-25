@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac32eadad446b1645accc90d5fd8f4e8, type: 3}
   m_Name: Fish
   m_EditorClassIdentifier: 
-  prefab: {fileID: 4973985442675616087, guid: eecd435157372fb4795b085e48e3fd0e, type: 3}
+  Id: 1
+  uiDisplay: {fileID: 5610096918170748405, guid: db1248032dc382f4bb2a739c2308f155,
+    type: 3}
   type: 0
   description: Swimys
   restoreHealthValue: 16

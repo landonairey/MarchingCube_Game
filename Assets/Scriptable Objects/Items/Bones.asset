@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c65318cdf7d054a429cfd12224473b86, type: 3}
   m_Name: Bones
   m_EditorClassIdentifier: 
-  prefab: {fileID: 2548521957670627118, guid: 0a36616e0ad23a04282818fa6de28f43, type: 3}
+  Id: 0
+  uiDisplay: {fileID: 1660957820977104790, guid: db1248032dc382f4bb2a739c2308f155,
+    type: 3}
   type: 2
   description: crunchy
