@@ -7,22 +7,20 @@ using UnityEngine.UI; //needed for obj.transform.GetChild(0).GetComponentInChild
 using UnityEngine.Events; //needed for events related to the button on the InventoryPrefab
 using UnityEngine.EventSystems; //needed for events related to the button on the InventoryPrefab
 
-public class DisplayInventory : MonoBehaviour
+public abstract class UserInterface : MonoBehaviour //we will always either use StaticInterface or DynamicInterface classes which are extensions of UserInterface. Abstract means we won't be able to directly use this UserInterface class on an object
 {
-    public MouseItem mouseItem = new MouseItem(); //reference to Mouse UI Item
+    public Player player; //now we'll have to drag and drop the Player onto each instance
 
-    public GameObject inventoryPrefab; //need to have one prefab that all inventory items use
     public InventoryObject inventory;
-    public int X_START;
-    public int Y_START;
-    public int X_SPACE_BETWEEN_ITEM;
-    public int NUMBER_OF_COLUMN;
-    public int Y_SPACE_BETWEEN_ITEMS;
-    Dictionary<GameObject, InventorySlot> itemsDisplayed = new Dictionary<GameObject, InventorySlot>(); //Use gameobject as the key and return the slot that's linked to that object 
+    public Dictionary<GameObject, InventorySlot> itemsDisplayed = new Dictionary<GameObject, InventorySlot>(); //Use gameobject as the key and return the slot that's linked to that object 
 
     // Start is called before the first frame update
     void Start()
     {
+        for (int i = 0; i < inventory.Container.Items.Length; i++) //loop through all items in interface
+        {
+            inventory.Container.Items[i].parent = this; //link all items in the database to this interface as the parent so we can figure out which interface an inventory slot and items belongs to
+        }
         CreateSlots();
     }
 
@@ -38,7 +36,7 @@ public class DisplayInventory : MonoBehaviour
     {
         foreach (KeyValuePair<GameObject, InventorySlot> _slot in itemsDisplayed)
         {
-            if(_slot.Value.ID >= 0) //if the slot has an item in it that we're looking at, then update the slot to display that item
+            if (_slot.Value.ID >= 0) //if the slot has an item in it that we're looking at, then update the slot to display that item
             {
                 _slot.Key.transform.GetChild(0).GetComponentInChildren<Image>().sprite = inventory.database.GetItem[_slot.Value.item.Id].uiDisplay; //only finding sprite when making display updates, otherwise you would need to save the sprite data when you save the inventory
                 _slot.Key.transform.GetChild(0).GetComponentInChildren<Image>().color = new Color(1, 1, 1, 1); //white with 100% alpha, will be using alpha to turn on/off this white square when we have an item or have an empty space
@@ -81,45 +79,10 @@ public class DisplayInventory : MonoBehaviour
         */
     }
 
-    public void CreateSlots()
-    {
-        // For Parts 1-4:
-        /*
-        for (int i = 0; i < inventory.Container.Items.Count; i++)
-        {
-            InventorySlot slot = inventory.Container.Items[i]; //helps refactor code
-
-            var obj = Instantiate(inventoryPrefab, Vector3.zero, Quaternion.identity, transform);
-            obj.transform.GetChild(0).GetComponentInChildren<Image>().sprite = inventory.database.GetItem[slot.item.Id].uiDisplay;
-            obj.GetComponent<RectTransform>().localPosition = GetPosition(i);
-            obj.GetComponentInChildren<TextMeshProUGUI>().text = slot.amount.ToString("n0"); //n0 formats with commas above 1000
-            itemsDisplayed.Add(slot, obj);
-        }
-        */
-
-        itemsDisplayed = new Dictionary<GameObject, InventorySlot>(); //create new dictionary, shouldn't need to do this, just a precaution
-        for (int i = 0; i < inventory.Container.Items.Length; i++)
-        {
-            var obj = Instantiate(inventoryPrefab, Vector3.zero, Quaternion.identity, transform);
-            // inventoryPrefab is the prefab created in the editor that you want to spawn
-            // Vector3.zero is giving an initial position of zero
-            // Quaternion.identity gives it a rotation of zero
-            // transform sets the parent of the object that we're spawning to the transform of the object our display inventory script is attached to
-
-            obj.GetComponent<RectTransform>().localPosition = GetPosition(i);
-
-            AddEvent(obj, EventTriggerType.PointerEnter, delegate { OnEnter(obj); }); //obj is the InventoryPrefab button object, delgate allow you to use a fuction that's also passing a variable
-            AddEvent(obj, EventTriggerType.PointerExit, delegate { OnExit(obj); });
-            AddEvent(obj, EventTriggerType.BeginDrag, delegate { OnDragStart(obj); });
-            AddEvent(obj, EventTriggerType.EndDrag, delegate { OnDragEnd(obj); });
-            AddEvent(obj, EventTriggerType.Drag, delegate { OnDrag(obj); });
-
-            itemsDisplayed.Add(obj, inventory.Container.Items[i]); //need to add inventoryPrefab to the dictionary we have
-        }
-    }
+    public abstract void CreateSlots();
 
     //adding events to our button that exists on the InventoryPrefab object
-    private void AddEvent(GameObject obj, EventTriggerType type, UnityAction<BaseEventData> action)
+    protected void AddEvent(GameObject obj, EventTriggerType type, UnityAction<BaseEventData> action) //protected makes this available to our extended classes but otherwise private
     {
         EventTrigger trigger = obj.GetComponent<EventTrigger>(); //grabbing even trigger from game object (built in Unity object)
         var eventTrigger = new EventTrigger.Entry(); //entry to event triggers
@@ -130,17 +93,17 @@ public class DisplayInventory : MonoBehaviour
 
     public void OnEnter(GameObject obj) //when we enter an inventory slot button
     {
-        mouseItem.hoverObj = obj; //set our mouse hover object to the object of the inventory slot button
-        if(itemsDisplayed.ContainsKey(obj)) //check that the object we are hovering over is actually an items displayed object
+        player.mouseItem.hoverObj = obj; //set our mouse hover object to the object of the inventory slot button
+        if (itemsDisplayed.ContainsKey(obj)) //check that the object we are hovering over is actually an items displayed object
         {
-            mouseItem.hoverItem = itemsDisplayed[obj]; //set the mouse item to that displayed item
+            player.mouseItem.hoverItem = itemsDisplayed[obj]; //set the mouse item to that displayed item
         }
     }
     public void OnExit(GameObject obj)
     {
         //same as OnEnter but just null out what we set
-        mouseItem.hoverObj = null; 
-        mouseItem.hoverItem = null; 
+        player.mouseItem.hoverObj = null;
+        player.mouseItem.hoverItem = null;
     }
     public void OnDragStart(GameObject obj)
     {
@@ -149,44 +112,50 @@ public class DisplayInventory : MonoBehaviour
         var rt = mouseObject.AddComponent<RectTransform>();
         rt.sizeDelta = new Vector2(50, 50); //makes sure the sprite we are displaying is the same size as the item we are clicking on inside the inventory
         mouseObject.transform.SetParent(transform.parent);
-        if (itemsDisplayed[obj].ID >= 0); // check if larger than 0 which means there is an item on that slot
+        if (itemsDisplayed[obj].ID >= 0) ; // check if larger than 0 which means there is an item on that slot
         {
             var img = mouseObject.AddComponent<Image>();
             img.sprite = inventory.database.GetItem[itemsDisplayed[obj].ID].uiDisplay;
             img.raycastTarget = false; //set raycast of the object we are creating to false otherwise the sprite image recttransform we are creating will be in the way of our mouse and will never fire the mouse pointer enter on other inventory slot locations
         }
-        mouseItem.obj = mouseObject;
-        mouseItem.item = itemsDisplayed[obj];
+        player.mouseItem.obj = mouseObject;
+        player.mouseItem.item = itemsDisplayed[obj];
     }
     public void OnDragEnd(GameObject obj)
     {
-        if (mouseItem.hoverObj) //if the slot exists and is not null then the mouse if over a slot that the item can go into, this has to reach into our system
+        //need to setup functions to make sure that the item can go into that slot (i.e. only helmets allowed in the top of the equipment menu)
+        //also needs to handle cases where you are dropping an item on some over items that's already in the slot
+        var itemOnMouse = player.mouseItem;
+        var mouseHoverItem = itemOnMouse.hoverItem;
+        var mouseHoverObj = itemOnMouse.hoverObj;
+        var getItemObject = inventory.database.GetItem; //links it to the dictionary that's on the interface
+
+        if (mouseHoverObj) //if the slot exists and is not null then the mouse if over a slot that the item can go into, this has to reach into our system
         {
-            inventory.MoveItem(itemsDisplayed[obj], itemsDisplayed[mouseItem.hoverObj]);
+            if (mouseHoverItem.CanPlaceInSlot(getItemObject[itemsDisplayed[obj].ID])); //Check if the item on the mouse and drop into the inventroy slot, i.e. if is the same type
+            {
+                Debug.Log("HERE OnDragEnd");
+                inventory.MoveItem(itemsDisplayed[obj], mouseHoverItem.parent.itemsDisplayed[mouseHoverObj]); //hoverObj is the object we clicked on and are about to drop. Changed to access this overobj from the moust item's parent
+            }
+
         }
         else //the mouse is hovering over an invalid position
         {
             //remove the item, needs to reach into the system. If you drag the item out of the inventory onto the ground this is going to delete it. Here is where you need to make a different method if you want to then populate that item on the ground!
             inventory.RemoveItem(itemsDisplayed[obj].item);
         }
-        Destroy(mouseItem.obj); //regardless of if you drop the item into a valid inventory slot or not, destroy the mouse UI Item
-        mouseItem.item = null; //clear the item on the mouse item
+        Destroy(itemOnMouse.obj); //regardless of if you drop the item into a valid inventory slot or not, destroy the mouse UI Item
+        itemOnMouse.item = null; //clear the item on the mouse item
 
     }
     public void OnDrag(GameObject obj)
     {
         //all this needs to do is update the mouseObject position to the position where our mouse is so that it follows
-        if(mouseItem.obj != null) //if you have an item on your mouse then update the position of that item
+        if (player.mouseItem.obj != null) //if you have an item on your mouse then update the position of that item
         {
-            mouseItem.obj.GetComponent<RectTransform>().position = Input.mousePosition;
+            player.mouseItem.obj.GetComponent<RectTransform>().position = Input.mousePosition;
         }
     }
-
-    public Vector3 GetPosition(int i)
-    {
-        return new Vector3(X_START + X_SPACE_BETWEEN_ITEM * (i % NUMBER_OF_COLUMN), Y_START - Y_SPACE_BETWEEN_ITEMS * (i / NUMBER_OF_COLUMN), 0f);
-    }
-
 }
 
 //separate class to have a reference to the mouse UI item so that all the button trigger methods can interact with it 

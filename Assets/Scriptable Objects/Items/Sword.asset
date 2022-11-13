@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: 3
   uiDisplay: {fileID: -6447425667752118579, guid: db1248032dc382f4bb2a739c2308f155,
     type: 3}
-  type: 1
+  type: 2
   description: 
   buffs:
   - attribute: 3

@@ -122,7 +122,7 @@ public class InventoryObject : ScriptableObject
     [ContextMenu("Clear")]
     public void Clear()
     {
-        Container = new Inventory();
+        Container.Clear();
     }
 }
 
@@ -132,11 +132,22 @@ public class Inventory
     //Moved Container to its own class so that we can pull just the data we need from the inventory slots instead of everything that's on the inventory object
     //public List<InventorySlot> Items = new List<InventorySlot>(); //changing from list to an array, a list can be modified at runtime but an array needs to initialized
     public InventorySlot[] Items = new InventorySlot[24]; //default to 24 slots, can define a different size though
+
+    //Clears all of the items in an inventory object while maintaining the size and allowed item settings
+    public void Clear()
+    {
+        for (int i = 0; i < Items.Length; i++)
+        {
+            Items[i].UpdateSlot(-1, new Item(), 0);
+        }
+    }
 }
 
 [System.Serializable]
 public class InventorySlot
 {
+    public ItemType[] AllowedItems = new ItemType[0]; //array of itemtypes is a list of allowed items in an inventory slot, zero means any item is allowed
+    public UserInterface parent; //reference to the parent of the user interface. Used when you drag an item from the player's UI to the equipment UI, when you drop it on an inventory slot in the equipment UI it needs to look up in the player's database of items to tell which item to populate in the equipment database
     public int ID = -1; //set outside of the bounds of actual item IDs so that -1 means an empty inventory slot
     public Item item; //changing this to hold items and not item objects
     public int amount;
@@ -162,6 +173,22 @@ public class InventorySlot
     {
         amount += value;
     }
-
+    public bool CanPlaceInSlot(ItemObject _item)
+    {
+        if (AllowedItems.Length <= 0)
+        {
+            Debug.Log("AllowedItems.Length" + AllowedItems.Length.ToString());
+            return true;
+        }
+        for (int i = 0; i < AllowedItems.Length; i++)
+        {
+            if (_item.type == AllowedItems[i])
+            {
+                Debug.Log(_item.type.ToString());
+                return true;
+            }
+        }
+        return false; //if it never hit a true above then return false
+    }
 
 }

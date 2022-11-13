@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public MouseItem mouseItem = new MouseItem(); //reference to Mouse UI Item, need only ONE instance of this between the Static/Dynamic/UserInterfaces so we put in on the Player for now
+
     public InventoryObject inventory;
 
     public void OnTriggerEnter(Collider other)

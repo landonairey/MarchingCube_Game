@@ -9,7 +9,7 @@ public class EquipmentObject : ItemObject
     //public float defenceBonus; //optional, you could use these if needed
     public void Awake()
     {
-        type = ItemType.Equipment;
+        type = ItemType.Chest;
     }
 
 }

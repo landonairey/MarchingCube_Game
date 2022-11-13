@@ -5,7 +5,11 @@ using UnityEngine;
 public enum ItemType
 {
     Food,
-    Equipment,
+    Helmet,
+    Weapon,
+    Shield,
+    Boots,
+    Chest,
     Default
 }
 
@@ -39,6 +43,11 @@ public class Item
     public string Name;
     public int Id;
     public ItemBuff[] buffs;
+    public Item() //new constructor for item, this is used for clearing an inventory
+    {
+        Name = "";
+        Id = -1;
+    }
     public Item(ItemObject item) //constructor for Item. Passing in item object, that should have the values of the items
     {
         Name = item.name;
