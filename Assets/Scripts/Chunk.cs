@@ -12,6 +12,7 @@ public class Chunk
 {
 	List<Vector3> vertices = new List<Vector3>();
 	List<int> triangles = new List<int>();
+	List<Vector2> uvs = new List<Vector2>();
 
 	public GameObject chunkObject;
 	MeshFilter meshFilter;
@@ -22,12 +23,12 @@ public class Chunk
 	int width { get { return GameData.chunkWidth; } }
 	int height { get { return GameData.chunkHeight; } }
 	float terrainSurface { get { return GameData.terrainSurface; } }
-	float[,,] terrainMap; //3D storage for terrain values that we will sample when generating the mesh
+	TerrainPoint[,,] terrainMap; //3D storage for terrain values that we will sample when generating the mesh of type TerrainPoint
 
 	int _configIndex = 0; //debug stepping through marching cube configurations see Update()
 
-	public bool smoothTerrain = false; //toggle for using linearly interpolated mesh positions or not for the marching cubes
-	public bool flatShaded = true; //toggle for using duplicate vertices or using shared vertices which blends shading
+	public bool smoothTerrain = false; //true for using linearly interpolated mesh positions or false for not for the marching cubes
+	public bool flatShaded = true; //true for using duplicate vertices or false for shared vertices which blends shading
 
 	List<Vector3Int> EditCellsPositions = new List<Vector3Int>(); //list of cells affected in the edit methods
 
@@ -45,9 +46,10 @@ public class Chunk
 		meshCollider = chunkObject.AddComponent<MeshCollider>();
 		meshRenderer = chunkObject.AddComponent<MeshRenderer>();
 		meshRenderer.material = Resources.Load<Material>("Materials/Terrain");
+		meshRenderer.material.SetTexture("_TexArr", World.Instance.terrainTexArray);
 
 		chunkObject.transform.tag = "Terrain";
-		terrainMap = new float[width + 1, height + 1, width + 1]; //needs to be plus one or you'll get an index out of range error
+		terrainMap = new TerrainPoint[width + 1, height + 1, width + 1]; //needs to be plus one or you'll get an index out of range error
 
 		if (!DEBUG_MARCHING_EN)
 		{
@@ -97,7 +99,7 @@ public class Chunk
 			{
 				//New Approach:
 				ClearMeshData();
-				terrainMap[1, 0, 0] = 1; //define cube corner values manually
+				terrainMap[1, 0, 0].dstToSurface = 1; //define cube corner values manually
 				MarchCube(Vector3Int.zero);
 				BuildMesh();
 
@@ -192,7 +194,7 @@ public class Chunk
 					thisHeight = GameData.GetTerrianHeight(x + chunkPosition.x, z + chunkPosition.z);
 
 					//y points below thisHeight will be negative (below terrain) and y points above thisHeight will be positve and will render 
-					terrainMap[x, y, z] = (float)y - thisHeight;
+					terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, Random.Range(0,World.Instance.terrainTextures.Length));
 					
 					//Debug
 					//Debug.Log(thisHeight);
@@ -201,19 +203,19 @@ public class Chunk
 		}
     }
 
-	//debug function to populate a specified cell configuration at position [0,0,0] int he terrainMap
+	//debug function to populate a specified cell configuration at position [0,0,0] in the terrainMap
 	void PopulateTerrainMap_debug(int config)
 	{
 		var bits = new BitArray(new int[] { config }); //convert into bit array
 
-		terrainMap[0, 0, 0] = System.Convert.ToInt32(bits.Get(0));
-		terrainMap[1, 0, 0] = System.Convert.ToInt32(bits.Get(1));
-		terrainMap[1, 1, 0] = System.Convert.ToInt32(bits.Get(2));
-		terrainMap[0, 1, 0] = System.Convert.ToInt32(bits.Get(3));
-		terrainMap[0, 0, 1] = System.Convert.ToInt32(bits.Get(4));
-		terrainMap[1, 0, 1] = System.Convert.ToInt32(bits.Get(5));
-		terrainMap[1, 1, 1] = System.Convert.ToInt32(bits.Get(6));
-		terrainMap[0, 1, 1] = System.Convert.ToInt32(bits.Get(7));
+		terrainMap[0, 0, 0].dstToSurface = System.Convert.ToInt32(bits.Get(0));
+		terrainMap[1, 0, 0].dstToSurface = System.Convert.ToInt32(bits.Get(1));
+		terrainMap[1, 1, 0].dstToSurface = System.Convert.ToInt32(bits.Get(2));
+		terrainMap[0, 1, 0].dstToSurface = System.Convert.ToInt32(bits.Get(3));
+		terrainMap[0, 0, 1].dstToSurface = System.Convert.ToInt32(bits.Get(4));
+		terrainMap[1, 0, 1].dstToSurface = System.Convert.ToInt32(bits.Get(5));
+		terrainMap[1, 1, 1].dstToSurface = System.Convert.ToInt32(bits.Get(6));
+		terrainMap[0, 1, 1].dstToSurface = System.Convert.ToInt32(bits.Get(7));
 	}
 
 	void CreateMeshData()
@@ -309,11 +311,12 @@ public class Chunk
 				{
 					vertices.Add(vertPosition);
 					triangles.Add(vertices.Count - 1);
+					uvs.Add(new Vector2(terrainMap[position.x, position.y, position.z].textureID, 0));
 				}
                 else
                 {
-					triangles.Add(VertForIndice(vertPosition));
-                }
+					triangles.Add(VertForIndice(vertPosition, position));
+				}
 				edgeIndex++;
 			}
 		}
@@ -497,7 +500,7 @@ public class Chunk
 				}
 				else
 				{
-					triangles.Add(VertForIndice(vertPosition));
+					triangles.Add(VertForIndice(vertPosition, position));
 				}
 
 				AllEdgesWithVertices[edgeIndex] = GameData.TriangleTable[configIndex, edgeIndex];
@@ -756,7 +759,7 @@ public class Chunk
 		// Edit terrainMap values at each of the vertex locations
 		foreach (Vector3Int vertLocation in EditVerticesPositions)
 		{
-			terrainMap[vertLocation.x, vertLocation.y, vertLocation.z] = 0f;
+			terrainMap[vertLocation.x, vertLocation.y, vertLocation.z].dstToSurface = 0f;
 		}
 
 		//Debug.Log("EditVerticesPositions: " + EditVerticesPositions.Count);
@@ -793,7 +796,7 @@ public class Chunk
 		// Edit terrainMap values at each of the vertex locations
 		foreach (Vector3Int vertLocation in EditVerticesPositions)
 		{
-			terrainMap[vertLocation.x, vertLocation.y, vertLocation.z] = 1f;
+			terrainMap[vertLocation.x, vertLocation.y, vertLocation.z].dstToSurface = 1f;
 		}
 		
 		//Debug.Log("EditVerticesPositions: " + EditVerticesPositions.Count);
@@ -818,7 +821,7 @@ public class Chunk
 		//Debug.Log(string.Format("PlaceTerrain Position: {0}, {1}, {2} ", v3Int.x, v3Int.y, v3Int.z));
 
 
-		terrainMap[v3Int.x, v3Int.y, v3Int.z] = 0f;
+		terrainMap[v3Int.x, v3Int.y, v3Int.z].dstToSurface = 0f;
 
 		
 		//Regenerate Mesh
@@ -829,16 +832,16 @@ public class Chunk
 	{
 		Vector3Int v3Int = new Vector3Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
 		v3Int -= chunkPosition; //adjust for chunk system
-		terrainMap[v3Int.x, v3Int.y, v3Int.z] = 1f;
+		terrainMap[v3Int.x, v3Int.y, v3Int.z].dstToSurface = 1f;
 		//CreateMeshData();
 	}
 
 	float SampleTerrain (Vector3Int point)
 	{
-		return terrainMap[point.x, point.y, point.z];
+		return terrainMap[point.x, point.y, point.z].dstToSurface;
 	}
 
-	int VertForIndice (Vector3 vert)
+	int VertForIndice (Vector3 vert, Vector3Int point)
     {
 		// Loop through all vertices currently in the vertices list
 		for (int i = 0; i < vertices.Count; i++)
@@ -850,6 +853,7 @@ public class Chunk
 
 		// If we didn't find a match, add this vert to the list and return last index
 		vertices.Add(vert);
+		uvs.Add(new Vector2(terrainMap[point.x, point.y, point.z].textureID, 0));
 		return vertices.Count - 1;
     }
 
@@ -857,6 +861,7 @@ public class Chunk
     {
 		vertices.Clear();
 		triangles.Clear();
+		uvs.Clear();
 	}
     
 	void BuildMesh()
@@ -864,11 +869,12 @@ public class Chunk
 		Mesh mesh = new Mesh();
 		mesh.vertices = vertices.ToArray();
 		mesh.triangles = triangles.ToArray();
+		mesh.uv = uvs.ToArray();
 		mesh.RecalculateNormals();
 		meshFilter.mesh = mesh;
 
 		meshCollider.sharedMesh = mesh;
-
+		
     }
 
     
