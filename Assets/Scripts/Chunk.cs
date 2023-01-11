@@ -25,6 +25,17 @@ public class Chunk
 	float terrainSurface { get { return GameData.terrainSurface; } }
 	TerrainPoint[,,] terrainMap; //3D storage for terrain values that we will sample when generating the mesh of type TerrainPoint
 
+
+	//Gaussian Distribution Kernel
+	float[,,] data3d_Au = GaussTable_3D(GameData.kernelSize_Au, GameData.kernelSigma_Au);
+
+	//Number of different elements/minerals including dirt/soil
+	int Au_ID = 0;
+	int Dirt_ID = 1;
+
+	float[,,,] oreMap; //Ore Distribution Map containing the values of generation lieklihood of any given ore at any given voxel location
+	int seed = 2; //seed for random number generator in Ore distribution
+
 	int _configIndex = 0; //debug stepping through marching cube configurations see Update()
 
 	public bool smoothTerrain = false; //true for using linearly interpolated mesh positions or false for not for the marching cubes
@@ -50,10 +61,12 @@ public class Chunk
 
 		chunkObject.transform.tag = "Terrain";
 		terrainMap = new TerrainPoint[width + 1, height + 1, width + 1]; //needs to be plus one or you'll get an index out of range error
+		oreMap = new float[width + 1, height + 1, width + 1, GameData.numElements];
 
 		if (!DEBUG_MARCHING_EN)
 		{
 			PopulateTerrainMap(); //COMMENT WHEN USING DEBUG_MARCHING
+			OreDistribution();
 		}
 		CreateMeshData();
 		BuildMesh();
@@ -193,15 +206,140 @@ public class Chunk
 					//thisHeight = (float)height * Mathf.Clamp(Mathf.PerlinNoise((float)x / 16f * 1.5f, (float)z / 16f * 1.5f), 0.0f, 1.0f); //the 16f and 1.5f are made up coefficients
 					thisHeight = GameData.GetTerrianHeight(x + chunkPosition.x, z + chunkPosition.z);
 
-					//y points below thisHeight will be negative (below terrain) and y points above thisHeight will be positve and will render 
+					/*
+					if (x > 5 && x < 10 && z >5 && z < 10)
+                    {
+						terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, 0);
+					}
+					else
+                    {
+						terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, Random.Range(1, World.Instance.terrainTextures.Length));
+					}
+					*/
+					
+					//y points below thisHeight will be negative (below terrain) and y points above this Height will be positve and will render 
 					terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, Random.Range(0,World.Instance.terrainTextures.Length));
 					
+
+
 					//Debug
 					//Debug.Log(thisHeight);
 				}
 			}
 		}
     }
+
+	void OreDistribution()
+    {
+		// Instantiate random number generator
+		System.Random random = new System.Random(seed);
+
+		//Center of cluster
+		Vector3Int ore_center = new Vector3Int(16 - (GameData.kernelSize_Au - 1) / 2, 60 - (GameData.kernelSize_Au - 1), 16 - (GameData.kernelSize_Au - 1) / 2);
+
+		//Load distribution values for each element:
+		//Au distribution:
+		for (int ix = 0; ix < data3d_Au.GetLength(0); ix++)
+		{
+			for (int iy = 0; iy < data3d_Au.GetLength(1); iy++)
+			{
+				for (int iz = 0; iz < data3d_Au.GetLength(2); iz++)
+				{
+					if (ix + ore_center.x < width && ore_center.y < height && iz + ore_center.z < width)
+					{
+						//write to OreMap if the location is within the bounds of the array
+						oreMap[ix + ore_center.x, iy + ore_center.y, iz + ore_center.z, Au_ID] = data3d_Au[ix, iy, iz];
+					}
+				}
+			}
+		}
+		float maxAu = data3d_Au[(GameData.kernelSize_Au - 1) / 2, (GameData.kernelSize_Au - 1) / 2, (GameData.kernelSize_Au - 1) / 2];
+
+		//Dirt distribution:
+		float dirtVal = 0.1f * Mathf.Max(maxAu); //include the other maxes here as well i.e. Mathf.Max(maxAu, maxAg, maxCu);
+		for (int ix = 0; ix < oreMap.GetLength(0); ix++)
+		{
+			for (int iy = 0; iy < oreMap.GetLength(1); iy++)
+			{
+				for (int iz = 0; iz < oreMap.GetLength(2); iz++)
+				{
+					oreMap[ix, iy, iz, Dirt_ID] = dirtVal;
+				}
+			}
+		}
+
+		//Loop through the same for loop as the PopulateTerrainMap and write element ID texture values to the TerrainPoints within terrainMap
+		for (int x = 0; x < width + 1; x++)
+		{
+			for (int y = 0; y < height + 1; y++)
+			{
+				for (int z = 0; z < width + 1; z++)
+				{
+					//Pick Element from Weighted Random Number Density Function
+
+					float AuPick = oreMap[x, y, z, Au_ID];
+					float DirtPick = oreMap[x, y, z, Dirt_ID];
+					float normFactor = 1 / (AuPick + DirtPick);
+
+					//weighted random number density function, these need to add up to 1
+					double RATIO_CHANCE_Au = normFactor * AuPick;
+					double RATIO_CHANCE_Dirt = normFactor * DirtPick;
+
+					double r = random.NextDouble(); //uniform(0,1] random doubles
+
+					if ((r -= RATIO_CHANCE_Au) < 0) // Test for A, a -= b is equivalent to a = a - b
+					{
+						//Debug.Log("pick Au");
+						terrainMap[x, y, z].textureID = Au_ID;
+					}
+					else // No need for final if statement
+					{
+						//Debug.Log("pick Dirt");
+						terrainMap[x, y, z].textureID = Dirt_ID;
+					}
+				}
+			}
+		}
+	}
+
+	static float[,,] GaussTable_3D(int size, float sigma)
+	{
+		float[,,] result = new float[size, size, size];
+		float u = (size - 1) / 2f; // center point coordinates
+		float sum = 0;
+
+		for (int z = 0; z < size; z++)
+		{
+			for (int y = 0; y < size; y++)
+			{
+				for (int x = 0; x < size; x++)
+				{
+					float temp1 = (u - x) * (u - x) + (u - y) * (u - y) + (u - z) * (u - z);
+					float temp2 = 2 * sigma * sigma;
+					float temp3 = Mathf.Sqrt(2 * Mathf.PI * sigma * sigma * sigma);
+					float temp4 = Mathf.Exp(-temp1 / temp2) / temp3;
+
+					result[x, y, z] = temp4;
+					sum += temp4;
+				}
+			}
+		}
+
+		for (int z = 0; z < size; z++)
+		{
+			for (int y = 0; y < size; y++)
+			{
+				for (int x = 0; x < size; x++)
+				{
+					result[x, y, z] /= sum;
+				}
+			}
+		}
+
+		return result;
+	}
+
+
 
 	//debug function to populate a specified cell configuration at position [0,0,0] in the terrainMap
 	void PopulateTerrainMap_debug(int config)

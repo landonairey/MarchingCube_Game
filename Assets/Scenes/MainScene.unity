@@ -1075,9 +1075,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   terrainTextures:
-  - {fileID: 2800000, guid: 8685c808932c7664a82fbb78fb34cf1a, type: 3}
-  - {fileID: 2800000, guid: 75c3ccee51e7f8d4f89d50e490c31a64, type: 3}
   - {fileID: 2800000, guid: e44f8c72ba174934cb7525cbaf61c445, type: 3}
+  - {fileID: 2800000, guid: 75c3ccee51e7f8d4f89d50e490c31a64, type: 3}
+  - {fileID: 2800000, guid: 8685c808932c7664a82fbb78fb34cf1a, type: 3}
   terrainTexArray: {fileID: 0}
 --- !u!4 &1167940932
 Transform:
@@ -1342,7 +1342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 043c2bdaf4d7a76409aca13a48c9f16b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  WorldSizeInChunks: 1
+  WorldSizeInChunks: 5
   loadingScreen: {fileID: 324520317}
   spherePrefab: {fileID: 5520116481947538531, guid: 821058eee345847429228f80b1431746,
     type: 3}

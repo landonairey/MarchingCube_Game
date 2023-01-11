@@ -11,6 +11,11 @@ public static class GameData
 	public static float BaseTerrainHeight = 60f; //minimum height of terrain before modification (i.e sea level)
 	public static float TerrainHeightRange = 10f; //the max height above BaseTerrainHeight our terrain will generate to
 
+	//NEED TO WORK OUT GOOD RATIO OF SIZE TO SIGMA
+	public static int kernelSize_Au = 31; //Ore Generation, keep odd
+	public static float kernelSigma_Au = 5f;
+	public static int numElements = 2;
+
 	public static float GetTerrianHeight (int x, int z)
     {
 		return (float)TerrainHeightRange * Mathf.Clamp(Mathf.PerlinNoise((float)x / 16f * 1.5f, (float)z / 16f * 1.5f), 0.0f, 1.0f) + BaseTerrainHeight; //the 16f and 1.5f are made up coefficients
