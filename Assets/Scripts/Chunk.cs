@@ -27,7 +27,7 @@ public class Chunk
 
 
 	//Gaussian Distribution Kernel
-	float[,,] data3d_Au = GaussTable_3D(GameData.kernelSize_Au, GameData.kernelSigma_Au);
+	//float[,,] data3d_Au = GaussTable_3D(GameData.kernelSize_Au, GameData.kernelSigma_Au);
 
 	//Number of different elements/minerals including dirt/soil
 	int Au_ID = 0;
@@ -35,6 +35,7 @@ public class Chunk
 
 	float[,,,] oreMap; //Ore Distribution Map containing the values of generation lieklihood of any given ore at any given voxel location
 	int seed = 2; //seed for random number generator in Ore distribution
+	List<OreCluster> oreClusters = new List<OreCluster>(); //list of ore clusters present in chunk
 
 	int _configIndex = 0; //debug stepping through marching cube configurations see Update()
 
@@ -45,7 +46,7 @@ public class Chunk
 
 	bool DEBUG_MARCHING_EN = false; //enable debug marching mode which removes the auto regeneration within the update loop and let's you cycle through cases
 
-	public Chunk (Vector3Int _position)
+	public Chunk (Vector3Int _position, int _chunkSeed)
     {
 		chunkObject = new GameObject();
 		chunkObject.name = string.Format("Chunk {0}, {1}", _position.x, _position.z);
@@ -66,7 +67,7 @@ public class Chunk
 		if (!DEBUG_MARCHING_EN)
 		{
 			PopulateTerrainMap(); //COMMENT WHEN USING DEBUG_MARCHING
-			OreDistribution();
+			OreDistribution(_chunkSeed);
 		}
 		CreateMeshData();
 		BuildMesh();
@@ -229,34 +230,64 @@ public class Chunk
 		}
     }
 
-	void OreDistribution()
+	void OreDistribution(int chunkSeed)
     {
 		// Instantiate random number generator
-		System.Random random = new System.Random(seed);
+		//System.Random randomX = new System.Random(chunkSeed + chunkPosition.x);
+		//System.Random random = new System.Random(randomX.Next() + chunkPosition.z);
+		System.Random random = new System.Random(chunkSeed);
+		Debug.Log(string.Format("Chunk {0}, {1}", chunkPosition.x, chunkPosition.z));
+		Debug.Log("Chunk Seed: " + (chunkSeed).ToString());
+
+		//random distribution sigma from 1 to 4.5
+		int randomInt = random.Next(0, int.MaxValue) ^ chunkPosition.x.GetHashCode() ^ chunkPosition.z.GetHashCode(); //make a random number unique to each chunk position (result from chatGPT)
+		Debug.Log("randomInt: " + (randomInt).ToString());
+		float sigma = (float)randomInt / int.MaxValue * 3.5f + 1;
+
+		//float sigma = (float)random.NextDouble()* 3.5f + 1;
+		Debug.Log("sigma: " + (sigma).ToString());
+
+		//size the kernel up to the nearest whole odd number that is at least 7x the sigma value
+		int kernelSize = Mathf.CeilToInt(sigma*7); 
+		if (kernelSize % 2 == 0)
+			kernelSize++; //was even so make it odd. Else is odd and don't do anything
 
 		//Center of cluster
-		Vector3Int ore_center = new Vector3Int(16 - (GameData.kernelSize_Au - 1) / 2, 60 - (GameData.kernelSize_Au - 1), 16 - (GameData.kernelSize_Au - 1) / 2);
+		Vector3Int ore_center = new Vector3Int(16 - (kernelSize - 1) / 2, 60 - (kernelSize - 1) / 2, 16 - (kernelSize - 1) / 2);
+
+		//Define ore type of the ore cluster
+		int oreID = 0;
+
+		//Add cluster information to list of clusters for the current Chunk
+		oreClusters.Add(new OreCluster(ore_center, kernelSize, sigma, oreID));
+		//Debug.Log("Center XZ: " + ore_center.x.ToString() + " " + ore_center.z.ToString());
+		//Debug.Log("kernelSize: " + kernelSize.ToString());
+		//Debug.Log("sigma: " + sigma.ToString());
+
+		//Gaussian Distribution Kernel
+		float[,,] gaussData = GaussTable_3D(kernelSize, sigma);
+
 
 		//Load distribution values for each element:
-		//Au distribution:
-		for (int ix = 0; ix < data3d_Au.GetLength(0); ix++)
+		//Ore distribution:
+		for (int ix = 0; ix < gaussData.GetLength(0); ix++)
 		{
-			for (int iy = 0; iy < data3d_Au.GetLength(1); iy++)
+			for (int iy = 0; iy < gaussData.GetLength(1); iy++)
 			{
-				for (int iz = 0; iz < data3d_Au.GetLength(2); iz++)
+				for (int iz = 0; iz < gaussData.GetLength(2); iz++)
 				{
 					if (ix + ore_center.x < width && ore_center.y < height && iz + ore_center.z < width)
 					{
 						//write to OreMap if the location is within the bounds of the array
-						oreMap[ix + ore_center.x, iy + ore_center.y, iz + ore_center.z, Au_ID] = data3d_Au[ix, iy, iz];
+						oreMap[ix + ore_center.x, iy + ore_center.y, iz + ore_center.z, oreID] = gaussData[ix, iy, iz];
 					}
 				}
 			}
 		}
-		float maxAu = data3d_Au[(GameData.kernelSize_Au - 1) / 2, (GameData.kernelSize_Au - 1) / 2, (GameData.kernelSize_Au - 1) / 2];
+		float maxOre = gaussData[(kernelSize - 1) / 2, (kernelSize - 1) / 2, (kernelSize - 1) / 2];
 
 		//Dirt distribution:
-		float dirtVal = 0.1f * Mathf.Max(maxAu); //include the other maxes here as well i.e. Mathf.Max(maxAu, maxAg, maxCu);
+		float dirtVal = 0.1f * Mathf.Max(maxOre); //include the other maxes here as well i.e. Mathf.Max(maxAu, maxAg, maxCu);
 		for (int ix = 0; ix < oreMap.GetLength(0); ix++)
 		{
 			for (int iy = 0; iy < oreMap.GetLength(1); iy++)
@@ -277,20 +308,20 @@ public class Chunk
 				{
 					//Pick Element from Weighted Random Number Density Function
 
-					float AuPick = oreMap[x, y, z, Au_ID];
+					float OrePick = oreMap[x, y, z, oreID];
 					float DirtPick = oreMap[x, y, z, Dirt_ID];
-					float normFactor = 1 / (AuPick + DirtPick);
+					float normFactor = 1 / (OrePick + DirtPick);
 
 					//weighted random number density function, these need to add up to 1
-					double RATIO_CHANCE_Au = normFactor * AuPick;
+					double RATIO_CHANCE_ORE = normFactor * OrePick;
 					double RATIO_CHANCE_Dirt = normFactor * DirtPick;
 
 					double r = random.NextDouble(); //uniform(0,1] random doubles
 
-					if ((r -= RATIO_CHANCE_Au) < 0) // Test for A, a -= b is equivalent to a = a - b
+					if ((r -= RATIO_CHANCE_ORE) < 0) // Test for A, a -= b is equivalent to a = a - b
 					{
 						//Debug.Log("pick Au");
-						terrainMap[x, y, z].textureID = Au_ID;
+						terrainMap[x, y, z].textureID = oreID;
 					}
 					else // No need for final if statement
 					{

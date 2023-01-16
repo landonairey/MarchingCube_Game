@@ -1343,6 +1343,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   WorldSizeInChunks: 5
+  WorldSeed: 1
   loadingScreen: {fileID: 324520317}
   spherePrefab: {fileID: 5520116481947538531, guid: 821058eee345847429228f80b1431746,
     type: 3}

@@ -13,6 +13,7 @@ using UnityEngine;
 public class WorldGenerator : MonoBehaviour
 {
     public int WorldSizeInChunks = 10;
+    public int WorldSeed = 1;
     public GameObject loadingScreen;
     Dictionary<Vector3Int, Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
 
@@ -27,13 +28,16 @@ public class WorldGenerator : MonoBehaviour
 
     void Generate ()
     {
+        //Initialize Random Seed
+        System.Random _random = new System.Random(WorldSeed);
+
         loadingScreen.SetActive(true);
         for (int x = 0; x < WorldSizeInChunks; x++)
         {
             for (int z = 0; z < WorldSizeInChunks; z++)
             {
                 Vector3Int chunkPos = new Vector3Int(x * GameData.chunkWidth, 0, z * GameData.chunkWidth);
-                chunks.Add(chunkPos, new Chunk(chunkPos));
+                chunks.Add(chunkPos, new Chunk(chunkPos, _random.Next()));
                 chunks[chunkPos].chunkObject.transform.SetParent(transform); //put chunks under transform of the World Generator object
             }
         }
