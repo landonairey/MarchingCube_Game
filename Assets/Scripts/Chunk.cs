@@ -25,13 +25,18 @@ public class Chunk
 	float terrainSurface { get { return GameData.terrainSurface; } }
 	TerrainPoint[,,] terrainMap; //3D storage for terrain values that we will sample when generating the mesh of type TerrainPoint
 
+	float scale = 90f; //for terrain generation
+	int octaves = 4; //for terrain generation
+	float persistance = 0.3f; //for terrain generation
+	float lacunarity = 2.3f; //for terrain generation
+
 
 	//Gaussian Distribution Kernel
 	//float[,,] data3d_Au = GaussTable_3D(GameData.kernelSize_Au, GameData.kernelSigma_Au);
 
 	//Number of different elements/minerals including dirt/soil
-	int Au_ID = 0;
-	int Dirt_ID = 1;
+	int Dirt_ID = GameData.numElements - 1; //set the ID to the last value (-1 becasue it's zero indexed)
+	int Grass_ID = GameData.numElements; //set to one more than Dirt_ID
 
 	float[,,,] oreMap; //Ore Distribution Map containing the values of generation lieklihood of any given ore at any given voxel location
 	int seed = 2; //seed for random number generator in Ore distribution
@@ -46,7 +51,7 @@ public class Chunk
 
 	bool DEBUG_MARCHING_EN = false; //enable debug marching mode which removes the auto regeneration within the update loop and let's you cycle through cases
 
-	public Chunk (Vector3Int _position, int _chunkSeed)
+	public Chunk (Vector3Int _position, int _chunkSeed, int WorldSizeInChunks)
     {
 		chunkObject = new GameObject();
 		chunkObject.name = string.Format("Chunk {0}, {1}", _position.x, _position.z);
@@ -66,7 +71,7 @@ public class Chunk
 
 		if (!DEBUG_MARCHING_EN)
 		{
-			PopulateTerrainMap(); //COMMENT WHEN USING DEBUG_MARCHING
+			PopulateTerrainMap(_position, WorldSizeInChunks, scale, octaves, persistance, lacunarity) ; //COMMENT WHEN USING DEBUG_MARCHING
 			OreDistribution(_chunkSeed);
 		}
 		CreateMeshData();
@@ -191,7 +196,7 @@ public class Chunk
 		return vt;
     }
 
-	void PopulateTerrainMap()
+	void PopulateTerrainMap(Vector3Int _position, int WorldSizeInChunks, float scale, int octaves, float persistance, float lacunarity)
     {
 		float thisHeight;
 		for (int x = 0; x < width + 1; x++)
@@ -200,14 +205,13 @@ public class Chunk
 			{
 				for (int z = 0; z < width + 1; z++)
 				{
-
-
 					//Using clamp to bound PerlinNoise as it intends to return a value 0.0f-1.0f but may sometimes be slightly out of that range
 					//Multipying by height will return a value in the range of 0-height					
 					//thisHeight = (float)height * Mathf.Clamp(Mathf.PerlinNoise((float)x / 16f * 1.5f, (float)z / 16f * 1.5f), 0.0f, 1.0f); //the 16f and 1.5f are made up coefficients
-					thisHeight = GameData.GetTerrianHeight(x + chunkPosition.x, z + chunkPosition.z);
+					thisHeight = GetTerrianHeight(x + chunkPosition.x, z + chunkPosition.z, scale, octaves, persistance, lacunarity);
 
-					/*
+					//DEBUG VIEW HOLE
+					/* //Make a hole
 					if (x > 5 && x < 10 && z >5 && z < 10)
                     {
 						terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, 0);
@@ -217,77 +221,168 @@ public class Chunk
 						terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, Random.Range(1, World.Instance.terrainTextures.Length));
 					}
 					*/
+
+					// DEBUG VIEW: add a curtain around the world for debug view
+					//*
+					if ((x == 0 && _position.x == 0) || // check west edge
+						x == width && _position.x == GameData.chunkWidth * (WorldSizeInChunks - 1) || // check east edge
+						z == 0 && _position.z == 0 || // check south edge
+						z == width && _position.z == GameData.chunkWidth * (WorldSizeInChunks - 1)) //check north edge
+                    {
+						//If the voxel is just below the surface
+						if ((float)y - thisHeight > -2)
+						{
+							//set to grass
+							terrainMap[x, y, z] = new TerrainPoint((float)y, Grass_ID);
+						}
+						else
+						{
+							//set to dirt
+							terrainMap[x, y, z] = new TerrainPoint((float)y, Dirt_ID);
+						}
+					}
+					else
+                    {
+						//If the voxel is just below the surface
+						if ((float)y - thisHeight > -2)
+						{
+							//set to grass
+							terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, Grass_ID);
+						}
+						else
+						{
+							//set to dirt
+							terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, Dirt_ID);
+						}
+					}
+					//*/
 					
+					//NORMAL command
 					//y points below thisHeight will be negative (below terrain) and y points above this Height will be positve and will render 
-					terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, Random.Range(0,World.Instance.terrainTextures.Length));
-					
-
-
-					//Debug
-					//Debug.Log(thisHeight);
+					//terrainMap[x, y, z] = new TerrainPoint((float)y - thisHeight, Random.Range(0,World.Instance.terrainTextures.Length));
 				}
 			}
 		}
     }
 
-	void OreDistribution(int chunkSeed)
+	public void OreDistribution(int chunkSeed)
     {
 		// Instantiate random number generator
-		//System.Random randomX = new System.Random(chunkSeed + chunkPosition.x);
-		//System.Random random = new System.Random(randomX.Next() + chunkPosition.z);
-		System.Random random = new System.Random(chunkSeed);
+		//System.Random random = new System.Random(chunkSeed);
+		//int randomInt = random.Next(0, int.MaxValue) ^ chunkPosition.x.GetHashCode() ^ chunkPosition.z.GetHashCode(); //make a random number unique to each chunk position (result from chatGPT)
+		
+		//New Number generator combines x and z hashcodes by adding a bit shifted x to a normal z chunck position
+		//System.Random random = new System.Random(chunkSeed + (chunkPosition.x << 16) + chunkPosition.z);
+		System.Random random = new System.Random(chunkSeed.GetHashCode() ^ chunkPosition.x.GetHashCode() ^ chunkPosition.z.GetHashCode());
 		Debug.Log(string.Format("Chunk {0}, {1}", chunkPosition.x, chunkPosition.z));
-		Debug.Log("Chunk Seed: " + (chunkSeed).ToString());
+		//Debug.Log("Seed used in Chunk: " + (chunkSeed + (chunkPosition.x << 16) + chunkPosition.z).ToString());
+		//Debug.Log(System.Convert.ToString(chunkSeed, 2).PadLeft(32, '0'));
+		//Debug.Log(System.Convert.ToString(chunkPosition.x, 2).PadLeft(32, '0'));
+		//Debug.Log(System.Convert.ToString(chunkPosition.z, 2).PadLeft(32, '0'));
+		//Debug.Log(System.Convert.ToString((chunkPosition.x << 16) + chunkPosition.z, 2).PadLeft(32, '0'));
+		//Debug.Log(System.Convert.ToString(chunkSeed + (chunkPosition.x << 16) + chunkPosition.z, 2).PadLeft(32, '0'));
 
-		//random distribution sigma from 1 to 4.5
-		int randomInt = random.Next(0, int.MaxValue) ^ chunkPosition.x.GetHashCode() ^ chunkPosition.z.GetHashCode(); //make a random number unique to each chunk position (result from chatGPT)
-		Debug.Log("randomInt: " + (randomInt).ToString());
-		float sigma = (float)randomInt / int.MaxValue * 3.5f + 1;
-
-		//float sigma = (float)random.NextDouble()* 3.5f + 1;
-		Debug.Log("sigma: " + (sigma).ToString());
-
-		//size the kernel up to the nearest whole odd number that is at least 7x the sigma value
-		int kernelSize = Mathf.CeilToInt(sigma*7); 
-		if (kernelSize % 2 == 0)
-			kernelSize++; //was even so make it odd. Else is odd and don't do anything
-
-		//Center of cluster
-		Vector3Int ore_center = new Vector3Int(16 - (kernelSize - 1) / 2, 60 - (kernelSize - 1) / 2, 16 - (kernelSize - 1) / 2);
-
-		//Define ore type of the ore cluster
-		int oreID = 0;
-
-		//Add cluster information to list of clusters for the current Chunk
-		oreClusters.Add(new OreCluster(ore_center, kernelSize, sigma, oreID));
-		//Debug.Log("Center XZ: " + ore_center.x.ToString() + " " + ore_center.z.ToString());
-		//Debug.Log("kernelSize: " + kernelSize.ToString());
-		//Debug.Log("sigma: " + sigma.ToString());
-
-		//Gaussian Distribution Kernel
-		float[,,] gaussData = GaussTable_3D(kernelSize, sigma);
-
-
-		//Load distribution values for each element:
-		//Ore distribution:
-		for (int ix = 0; ix < gaussData.GetLength(0); ix++)
+		//testing random numbers
+		/*
+		for (int i = 0; i < 5; i++)
 		{
-			for (int iy = 0; iy < gaussData.GetLength(1); iy++)
+			Debug.Log(random.Next(0, int.MaxValue).ToString());
+		}
+		//*/
+
+		/*
+		//New Number generator combines x and z hashcodes by adding a bit shifted x to a normal z chunck position
+		System.Random randomDUPLICATE = new System.Random(chunkSeed + (chunkPosition.x << 16) + chunkPosition.z);
+		Debug.Log(string.Format("ChunkDUPLICATE {0}, {1}", chunkPosition.x, chunkPosition.z));
+		Debug.Log("Seed used in Chunk: " + (chunkSeed + (chunkPosition.x << 16) + chunkPosition.z).ToString());
+		Debug.Log(System.Convert.ToString(chunkSeed + (chunkPosition.x << 16) + chunkPosition.z, 2).PadLeft(32, '0'));
+
+		//testing random numbers
+	
+		for (int i = 0; i < 5; i++)
+		{
+			Debug.Log(randomDUPLICATE.Next(0, int.MaxValue).ToString());
+		}
+		//*/
+
+
+		int randomInt;
+
+
+
+		//Loop through number of desired cluster generations for the chunk and save to the oreClusters List
+		for (int i = 0; i < GameData.numOreClusters; i++)
+        {
+			//random distribution sigma from 1 to 4.5
+			randomInt = random.Next(0, int.MaxValue);
+			float sigma = (float)randomInt / int.MaxValue * 3.5f + 1;
+			Debug.Log("sigma: " + (sigma).ToString());
+
+			//size the kernel up to the nearest whole odd number that is at least 7x the sigma value
+			int kernelSize = Mathf.CeilToInt(sigma * 7);
+			if (kernelSize % 2 == 0)
+				kernelSize++; //was even so make it odd. Else is odd and don't do anything
+
+			//Center of cluster
+			//Vector3Int ore_center = new Vector3Int(16 - (kernelSize - 1) / 2, 60 - (kernelSize - 1) / 2, 16 - (kernelSize - 1) / 2);
+			Vector3Int ore_center = new Vector3Int(random.Next(0, 32), random.Next(0, 60), random.Next(0, 32));
+			//Vector3Int ore_center = new Vector3Int(32, 32, 0); //south east edge of the chunk
+			Debug.Log(string.Format("OreCenter: {0:0.0}, {1:0.0}", ore_center.x, ore_center.z));
+
+			//Define ore type of the ore cluster
+			//int oreID = i;
+			int oreID = GameData.oreClusterIDs[i];
+			Debug.Log("i: " + (i).ToString());
+			Debug.Log("oreID: " + (oreID).ToString());
+
+			//Add cluster information to list of clusters for the current Chunk
+			oreClusters.Add(new OreCluster(ore_center, kernelSize, sigma, oreID));
+			//Debug.Log("Center XZ: " + ore_center.x.ToString() + " " + ore_center.z.ToString());
+			//Debug.Log("kernelSize: " + kernelSize.ToString());
+			//Debug.Log("sigma: " + sigma.ToString());
+		}
+
+
+		//Loop through the oreClusters List to generate values in the oreMap
+		for (int o = 0; o < oreClusters.Count; o++)
+		{
+			//Gaussian Distribution Kernel
+			float[,,] gaussData = GaussTable_3D(oreClusters[o].kernelSize, oreClusters[o].sigma);
+
+
+			//Load distribution values for each element:
+			//Ore distribution:
+			float maxOre = gaussData[(oreClusters[o].kernelSize - 1) / 2, (oreClusters[o].kernelSize - 1) / 2, (oreClusters[o].kernelSize - 1) / 2];
+			for (int ix = 0; ix < gaussData.GetLength(0); ix++)
 			{
-				for (int iz = 0; iz < gaussData.GetLength(2); iz++)
+				for (int iy = 0; iy < gaussData.GetLength(1); iy++)
 				{
-					if (ix + ore_center.x < width && ore_center.y < height && iz + ore_center.z < width)
+					for (int iz = 0; iz < gaussData.GetLength(2); iz++)
 					{
-						//write to OreMap if the location is within the bounds of the array
-						oreMap[ix + ore_center.x, iy + ore_center.y, iz + ore_center.z, oreID] = gaussData[ix, iy, iz];
+						//if (ix + oreClusters[0].center.x < width && oreClusters[0].center.y < height && iz + oreClusters[0].center.z < width)
+						if (ix + oreClusters[o].center.x - (oreClusters[o].kernelSize - 1) / 2 < width
+							&& iy + oreClusters[o].center.y - (oreClusters[o].kernelSize - 1) / 2 < height
+							&& iz + oreClusters[o].center.z - (oreClusters[o].kernelSize - 1) / 2 < width
+							&& ix + oreClusters[o].center.x - (oreClusters[o].kernelSize - 1) / 2 >= 0
+							&& iy + oreClusters[o].center.y - (oreClusters[o].kernelSize - 1) / 2 >= 0
+							&& iz + oreClusters[o].center.z - (oreClusters[o].kernelSize - 1) / 2 >= 0
+							)
+						{
+							//write to OreMap if the location is within the bounds of the array
+							//oreMap[ix + oreClusters[0].center.x, iy + oreClusters[0].center.y, iz + oreClusters[0].center.z, oreClusters[0].oreID] = gaussData[ix, iy, iz];
+							oreMap[
+								ix + oreClusters[o].center.x - (oreClusters[o].kernelSize - 1) / 2,
+								iy + oreClusters[o].center.y - (oreClusters[o].kernelSize - 1) / 2,
+								iz + oreClusters[o].center.z - (oreClusters[o].kernelSize - 1) / 2,
+								oreClusters[o].oreID] += gaussData[ix, iy, iz]/ maxOre; //using += to add more weight for overlapping same-ore clusters, normalize distribution so that the dirt is always a relative 10% baseline
+						}
 					}
 				}
 			}
 		}
-		float maxOre = gaussData[(kernelSize - 1) / 2, (kernelSize - 1) / 2, (kernelSize - 1) / 2];
 
 		//Dirt distribution:
-		float dirtVal = 0.1f * Mathf.Max(maxOre); //include the other maxes here as well i.e. Mathf.Max(maxAu, maxAg, maxCu);
+		float dirtVal = 0.1f; // * Mathf.Max(maxOre); //include the other maxes here as well i.e. Mathf.Max(maxAu, maxAg, maxCu);
 		for (int ix = 0; ix < oreMap.GetLength(0); ix++)
 		{
 			for (int iy = 0; iy < oreMap.GetLength(1); iy++)
@@ -299,6 +394,119 @@ public class Chunk
 			}
 		}
 
+		//Check OreCluster Centers of neighboring chunks to see if any cross into this current chunk
+		List<OreCluster> neighbOreClusters = new List<OreCluster>(); //list of ore clusters present in neighboring chunks
+
+		//Neighboring Chunk position offsets (x, z)
+		int[,] compassChunkPos = new int[8, 2]
+		{
+			// N		NE		 E		  SE		S		   SW		  W			NW
+			{ 0, 1}, { 1, 1}, { 1, 0}, { 1, -1}, { 0, -1}, { -1, -1}, { -1, 0}, { -1, 1}
+		};
+
+		int neighChunkPosX;
+		int neighChunkPosZ;
+		int r_int;
+
+
+		//Loop through each neighboring chunk position
+		for (int k = 0; k < compassChunkPos.GetLength(0); k++)
+		{
+			Debug.Log(k.ToString());
+			neighChunkPosX = chunkPosition.x + compassChunkPos[k, 0] * GameData.chunkWidth;
+			neighChunkPosZ = chunkPosition.z + compassChunkPos[k, 1] * GameData.chunkWidth;
+
+			// Instantiate random number generator
+			//System.Random r_neigh = new System.Random(chunkSeed);
+			//int r_int = r_neigh.Next(0, int.MaxValue) ^ neighChunkPosX.GetHashCode() ^ neighChunkPosZ.GetHashCode(); //make a random number unique to each chunk position (result from chatGPT)
+			//System.Random r_neigh = new System.Random(chunkSeed + (neighChunkPosX << 16) + neighChunkPosZ);
+			System.Random r_neigh = new System.Random(chunkSeed.GetHashCode() ^ neighChunkPosX.GetHashCode() ^ neighChunkPosZ.GetHashCode());
+
+			//testing random numbers
+			Debug.Log(string.Format("NEIGHBOR {0}, {1}", neighChunkPosX, neighChunkPosZ));
+			//Debug.Log("Seed used in NEIGHBOR: " + (chunkSeed + (neighChunkPosX << 16) + neighChunkPosZ).ToString());
+			//Debug.Log(System.Convert.ToString(chunkSeed + (neighChunkPosX << 16) + neighChunkPosZ, 2).PadLeft(32, '0'));
+
+			
+			//for (int i = 0; i < 5; i++)
+			//{
+			//	Debug.Log(r_neigh.Next(0, int.MaxValue).ToString());
+			//}
+			
+
+			//r_int = r_neigh.Next(0, int.MaxValue);
+
+			//Loop through number of desired cluster generations for the chunk and save to the oreClusters List
+			for (int i = 0; i < GameData.numOreClusters; i++)
+			{
+				//random distribution sigma from 1 to 4.5
+				r_int = r_neigh.Next(0, int.MaxValue);
+				float sigma = (float)r_int / int.MaxValue * 3.5f + 1;
+				//Debug.Log("sigma: " + (sigma).ToString());
+
+				//size the kernel up to the nearest whole odd number that is at least 7x the sigma value
+				int kernelSize = Mathf.CeilToInt(sigma * 7);
+				if (kernelSize % 2 == 0)
+					kernelSize++; //was even so make it odd. Else is odd and don't do anything
+
+				//Center of cluster
+				Vector3Int ore_center = new Vector3Int(r_neigh.Next(0, 32), r_neigh.Next(0, 60), r_neigh.Next(0, 32));
+				//Vector3Int ore_center = new Vector3Int(32, 32, 0); //south east edge of the chunk
+
+				//Define ore type of the ore cluster
+				//int oreID = i;
+				int oreID = GameData.oreClusterIDs[i];
+
+				//Add cluster information to list of clusters for the current Chunk
+				neighbOreClusters.Add(new OreCluster(ore_center, kernelSize, sigma, oreID));
+			}
+
+
+			//Loop through the oreClusters List to generate values in the oreMap
+			for (int o = 0; o < neighbOreClusters.Count; o++)
+			{
+				//Gaussian Distribution Kernel
+				float[,,] gaussData = GaussTable_3D(neighbOreClusters[o].kernelSize, neighbOreClusters[o].sigma);
+
+
+				//Load distribution values for each element:
+				//Ore distribution:
+				float maxOre = gaussData[(neighbOreClusters[o].kernelSize - 1) / 2, (neighbOreClusters[o].kernelSize - 1) / 2, (neighbOreClusters[o].kernelSize - 1) / 2];
+				for (int ix = 0; ix < gaussData.GetLength(0); ix++)
+				{
+					for (int iy = 0; iy < gaussData.GetLength(1); iy++)
+					{
+						for (int iz = 0; iz < gaussData.GetLength(2); iz++)
+						{
+							//Check if the distribution from the neighboring chunk crosses the chunk boarder into the current chunk
+							if (ix + neighbOreClusters[o].center.x - (neighbOreClusters[o].kernelSize - 1) / 2 + compassChunkPos[k, 0] * GameData.chunkWidth < width
+								&& iy + neighbOreClusters[o].center.y - (neighbOreClusters[o].kernelSize - 1) / 2 < height
+								&& iz + neighbOreClusters[o].center.z - (neighbOreClusters[o].kernelSize - 1) / 2 + compassChunkPos[k, 1] * GameData.chunkWidth < width
+								&& ix + neighbOreClusters[o].center.x - (neighbOreClusters[o].kernelSize - 1) / 2 + compassChunkPos[k, 0] * GameData.chunkWidth >= 0
+								&& iy + neighbOreClusters[o].center.y - (neighbOreClusters[o].kernelSize - 1) / 2 >= 0
+								&& iz + neighbOreClusters[o].center.z - (neighbOreClusters[o].kernelSize - 1) / 2 + compassChunkPos[k, 1] * GameData.chunkWidth >= 0
+								)
+							{
+								//write to OreMap if the distribution from the neighboring chunk crosses the chunk boarder into the current chunk
+								oreMap[
+									ix + neighbOreClusters[o].center.x - (neighbOreClusters[o].kernelSize - 1) / 2 + compassChunkPos[k, 0] * GameData.chunkWidth,
+									iy + neighbOreClusters[o].center.y - (neighbOreClusters[o].kernelSize - 1) / 2,
+									iz + neighbOreClusters[o].center.z - (neighbOreClusters[o].kernelSize - 1) / 2 + compassChunkPos[k, 1] * GameData.chunkWidth,
+									neighbOreClusters[o].oreID] += gaussData[ix, iy, iz] / maxOre; //using += to add more weight for overlapping same-ore clusters, normalize distribution so that the dirt is always a relative 10% baseline
+							}
+						}
+					}
+				}
+			}
+
+			//Clear Neighbor Cluster List
+			neighbOreClusters.Clear();
+		}
+
+		float[] voxelResourceArray = new float[GameData.numElements]; //array of all resources and their given distribution value for a voxel location
+		float[] nvoxelResourceArray = new float[GameData.numElements]; //normalized array
+		float runningSum = 0.0f;
+
 		//Loop through the same for loop as the PopulateTerrainMap and write element ID texture values to the TerrainPoints within terrainMap
 		for (int x = 0; x < width + 1; x++)
 		{
@@ -308,26 +516,62 @@ public class Chunk
 				{
 					//Pick Element from Weighted Random Number Density Function
 
-					float OrePick = oreMap[x, y, z, oreID];
-					float DirtPick = oreMap[x, y, z, Dirt_ID];
-					float normFactor = 1 / (OrePick + DirtPick);
+					//reset running sum
+					runningSum = 0.0f;
 
-					//weighted random number density function, these need to add up to 1
-					double RATIO_CHANCE_ORE = normFactor * OrePick;
-					double RATIO_CHANCE_Dirt = normFactor * DirtPick;
-
-					double r = random.NextDouble(); //uniform(0,1] random doubles
-
-					if ((r -= RATIO_CHANCE_ORE) < 0) // Test for A, a -= b is equivalent to a = a - b
-					{
-						//Debug.Log("pick Au");
-						terrainMap[x, y, z].textureID = oreID;
+					//Loop through resource array for the current x,y,z voxel location and add up the distribution values
+					for (int i = 0; i < voxelResourceArray.Length; i++)
+                    {
+						voxelResourceArray[i] = oreMap[x, y, z, i];
+						runningSum += oreMap[x, y, z, i];
 					}
-					else // No need for final if statement
+
+					//Loop through and save normalized values
+					for (int i = 0; i < nvoxelResourceArray.Length; i++)
 					{
-						//Debug.Log("pick Dirt");
-						terrainMap[x, y, z].textureID = Dirt_ID;
+						nvoxelResourceArray[i] = voxelResourceArray[i] / runningSum;
 					}
+
+					//reset running sum
+					runningSum = 0.0f;
+
+					//uniform(0,1] random doubles
+					double r = random.NextDouble();
+
+					//loop through the cumulative sum of the normalized values and check against the random value
+					for (int i = 0; i < nvoxelResourceArray.Length; i++)
+                    {
+						if (runningSum > r)
+						{
+							Debug.Log("ERROR CASE");
+                        }
+
+						runningSum += nvoxelResourceArray[i];
+
+						//Use this voxel resource entry to save to the terrain map
+						if (runningSum >= r)
+						{
+							//if it's dirt do something else
+							if (i == Dirt_ID)
+                            {
+								//should already be set above
+								/*
+								if (random.NextDouble() > 0.5)
+									terrainMap[x, y, z].textureID = Dirt_ID; //Dirt
+								else
+									terrainMap[x, y, z].textureID = Grass_ID; //Grass
+								*/
+							}
+							else
+                            {
+								//Save chosen resource type to Terrain Map
+								terrainMap[x, y, z].textureID = i;
+							}
+							break;
+						}
+
+					}
+
 				}
 			}
 		}
@@ -1046,5 +1290,36 @@ public class Chunk
 		
     }
 
-    
+	public int GetTextureID(Vector3 pos)
+    {
+		Vector3Int v3Int = new Vector3Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
+		v3Int -= chunkPosition; //adjust for chunk system
+		return terrainMap[v3Int.x, v3Int.y, v3Int.z].textureID;
+	}
+
+	public float GetTerrianHeight(int x, int z, float scale, int octaves, float persistance, float lacunarity)
+	{
+		float amplitude = 1;
+		float frequency = 1.5f;
+		float noiseHeight = 0;
+		float perlinValue = 0;
+
+
+		for (int i = 0; i < octaves; i++)
+        {
+			float sampleX = x / scale * frequency;
+			float sampleZ = z / scale * frequency;
+
+			perlinValue = Mathf.Clamp(Mathf.PerlinNoise(sampleX, sampleZ), 0.0f, 1.0f);
+			noiseHeight += perlinValue * amplitude;
+
+			amplitude *= persistance;
+			frequency *= lacunarity;
+		}
+
+		//return (float)GameData.TerrainHeightRange * Mathf.Clamp(Mathf.PerlinNoise((float)x / 16f * 1.5f, (float)z / 16f * 1.5f), 0.0f, 1.0f) + GameData.BaseTerrainHeight; //the 16f and 1.5f are made up coefficients
+		return (float)GameData.TerrainHeightRange * noiseHeight + GameData.BaseTerrainHeight;
+		//return (float)GameData.TerrainHeightRange * perlinValue + GameData.BaseTerrainHeight;
+	}
+
 }
