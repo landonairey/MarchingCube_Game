@@ -8,6 +8,11 @@ public class DebugDisplay : MonoBehaviour
     public TextMeshProUGUI wXYZ;
     public TextMeshProUGUI vXYZ;
     public TextMeshProUGUI volume;
+    public TextMeshProUGUI volume0;
+    public TextMeshProUGUI volume1;
+    public TextMeshProUGUI volume2;
+    public TextMeshProUGUI volume3;
+    public TextMeshProUGUI volume4;
 
     [SerializeField] float vScale = 0.5f;
 
@@ -36,6 +41,13 @@ public class DebugDisplay : MonoBehaviour
 
         float vol = player.GetComponent<PlayerMovement>().volume;
         volume.text = string.Format("Volume: {0:0.000}", vol); //Use format for better performance
+
+        float[] vols = player.GetComponent<PlayerMovement>().volumes;
+        volume0.text = string.Format("Gold Vol: {0:0.000}", vols[0]); //Use format for better performance
+        volume1.text = string.Format("Silv Vol: {0:0.000}", vols[1]); //Use format for better performance
+        volume2.text = string.Format("Copp Vol: {0:0.000}", vols[2]); //Use format for better performance
+        volume3.text = string.Format("Dirt Vol: {0:0.000}", vols[3]); //Use format for better performance
+        volume4.text = string.Format("Gras Vol: {0:0.000}", vols[4]); //Use format for better performance
 
         if (time >= pollingTime)
         {

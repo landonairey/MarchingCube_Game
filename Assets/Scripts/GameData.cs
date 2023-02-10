@@ -9,12 +9,18 @@ public static class GameData
 	public static int chunkHeight = 128; //number of cubes tall we are going to march through
 
 	public static float BaseTerrainHeight = 60f; //minimum height of terrain before modification (i.e sea level)
-	public static float TerrainHeightRange = 10f; //the max height above BaseTerrainHeight our terrain will generate to
+	public static float TerrainHeightRange = 30f; //the max height above BaseTerrainHeight our terrain will generate to
+
+	//NEED TO WORK OUT GOOD RATIO OF SIZE TO SIGMA
+	//public static int kernelSize_Au = 21; //Ore Generation, keep odd, should be 7x the sigma value
+	//public static float kernelSigma_Au = 3f;
+	public static int numElements = 4; //number of different elements/ore including dirt
+	public static int numOreClusters = 6; //number of ore clusters in any given chunk
+	public static int[] oreClusterIDs = { 0, 0, 1, 1, 2, 2};
 
 	//NEED TO WORK OUT GOOD RATIO OF SIZE TO SIGMA
 	public static int kernelSize_Au = 21; //Ore Generation, keep odd, should be 7x the sigma value
 	public static float kernelSigma_Au = 3f;
-	public static int numElements = 2;
 
 	public static float GetTerrianHeight (int x, int z)
     {

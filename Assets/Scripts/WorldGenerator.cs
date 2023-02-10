@@ -16,6 +16,7 @@ public class WorldGenerator : MonoBehaviour
     public int WorldSeed = 1;
     public GameObject loadingScreen;
     Dictionary<Vector3Int, Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
+    //public float[] volumes = new float[GameData.numElements+1];
 
     List<Vector3Int> EditCellsPositions = new List<Vector3Int>(); //list of cells affected in the edit methods
     List<Chunk> EditChunks = new List<Chunk>(); //list of Chunks affected in the edit methods
@@ -29,7 +30,12 @@ public class WorldGenerator : MonoBehaviour
     void Generate ()
     {
         //Initialize Random Seed
-        System.Random _random = new System.Random(WorldSeed);
+        //System.Random _random = new System.Random(WorldSeed);
+
+        //for (int i = 0; i < volumes.Length; i++)
+        //{
+        //    volumes[i] = 0.0f;
+        //}
 
         loadingScreen.SetActive(true);
         for (int x = 0; x < WorldSizeInChunks; x++)
@@ -37,7 +43,7 @@ public class WorldGenerator : MonoBehaviour
             for (int z = 0; z < WorldSizeInChunks; z++)
             {
                 Vector3Int chunkPos = new Vector3Int(x * GameData.chunkWidth, 0, z * GameData.chunkWidth);
-                chunks.Add(chunkPos, new Chunk(chunkPos, _random.Next()));
+                chunks.Add(chunkPos, new Chunk(chunkPos, WorldSeed, WorldSizeInChunks));
                 chunks[chunkPos].chunkObject.transform.SetParent(transform); //put chunks under transform of the World Generator object
             }
         }
@@ -56,7 +62,7 @@ public class WorldGenerator : MonoBehaviour
         return chunks[new Vector3Int(x, y, z)];
     }
 
-    public float HandleModifyTerrain(Vector3 pos, float editSphereDiameter, int editVal)
+    public Tuple<float, float[]> HandleModifyTerrain(Vector3 pos, float editSphereDiameter, int editVal)
     {
         //initialize variables
         float deltaVol = 0;
@@ -64,6 +70,14 @@ public class WorldGenerator : MonoBehaviour
         float endVolume = 0;
         EditChunks = new List<Chunk>();
         EditCellsPositions = new List<Vector3Int>();
+
+        float[] startVolumes = new float[GameData.numElements+1];
+        float[] endVolumes = new float[GameData.numElements+1];
+        for (int i = 0; i < startVolumes.Length; i++)
+        {
+            startVolumes[i] = 0.0f;
+            endVolumes[i] = 0.0f;
+        }
 
         // Find list of vertex locations that are within the Edit Sphere
         List<Vector3Int> EditVerticesPositions = FindEditVertices(pos, editSphereDiameter);
@@ -86,6 +100,12 @@ public class WorldGenerator : MonoBehaviour
             //Debug.Log(string.Format("Current Edit Cell Position: {0}, {1}, {2} ", EditCellsPositions[i].x, EditCellsPositions[i].y, EditCellsPositions[i].z));
             startVolume = startVolume + currentChunk.TetraCellVolume(EditCellsPositions[i]);
             //Debug.Log("startVolume: " + startVolume);
+
+            //get element type from cell position
+            int currentID = currentChunk.GetTextureID(EditCellsPositions[i]);
+
+            //save starting volumes to ID specific volumes array
+            startVolumes[currentID] = startVolumes[currentID] + currentChunk.TetraCellVolume(EditCellsPositions[i]);
         }
 
         // Loop through all EditVerticesPositions list
@@ -159,6 +179,12 @@ public class WorldGenerator : MonoBehaviour
             //Debug.Log(string.Format("Current Edit Cell Position: {0}, {1}, {2} ", EditCellsPositions[i].x, EditCellsPositions[i].y, EditCellsPositions[i].z));
             endVolume = endVolume + currentChunk.TetraCellVolume(EditCellsPositions[i]);
 
+            //get element type from cell position
+            int currentID = currentChunk.GetTextureID(EditCellsPositions[i]);
+
+            //save starting volumes to ID specific volumes array
+            endVolumes[currentID] = endVolumes[currentID] + currentChunk.TetraCellVolume(EditCellsPositions[i]);
+
             //Debug.Log("endVolume: " + endVolume);
         }
 
@@ -171,9 +197,17 @@ public class WorldGenerator : MonoBehaviour
 
         //change in volume
         deltaVol = startVolume - endVolume;
-        Debug.Log("deltaVol: " + deltaVol);
+        //Debug.Log("deltaVol: " + deltaVol);
 
-        return deltaVol;
+        float[] deltaVols = new float[GameData.numElements+1];
+        for (int i = 0; i < deltaVols.Length; i++)
+        {
+            deltaVols[i] = startVolumes[i] - endVolumes[i];
+            Debug.Log(string.Format("deltaVol {0}", deltaVols[i]));
+        }
+        
+
+        return Tuple.Create(deltaVol, deltaVols);
 
     }
 
