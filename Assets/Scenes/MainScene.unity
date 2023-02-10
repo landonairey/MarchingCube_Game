@@ -1180,59 +1180,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   wireframeBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
   isInWireframeMode: 0
-<<<<<<< HEAD
---- !u!1 &1167940930
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1167940932}
-  - component: {fileID: 1167940931}
-  m_Layer: 0
-  m_Name: World
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1167940931
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1167940930}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 94c62dcfa75fd4242a8f3eaa1400aebf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  terrainTextures:
-  - {fileID: 2800000, guid: e44f8c72ba174934cb7525cbaf61c445, type: 3}
-  - {fileID: 2800000, guid: 75c3ccee51e7f8d4f89d50e490c31a64, type: 3}
-  - {fileID: 2800000, guid: 8685c808932c7664a82fbb78fb34cf1a, type: 3}
-  terrainTexArray: {fileID: 0}
---- !u!4 &1167940932
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1167940930}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.10084808, y: 78.70295, z: -0.06161332}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 6
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1262166771
-=======
 --- !u!1 &1089696019
->>>>>>> 804c93f0059e095db1ed86b7ef98607aadafe87d
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1812,11 +1760,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   WorldSizeInChunks: 5
-<<<<<<< HEAD
-  WorldSeed: 1
-=======
   WorldSeed: 3
->>>>>>> 804c93f0059e095db1ed86b7ef98607aadafe87d
   loadingScreen: {fileID: 324520317}
   spherePrefab: {fileID: 5520116481947538531, guid: 821058eee345847429228f80b1431746,
     type: 3}

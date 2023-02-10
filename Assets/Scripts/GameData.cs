@@ -21,7 +21,6 @@ public static class GameData
 	//NEED TO WORK OUT GOOD RATIO OF SIZE TO SIGMA
 	public static int kernelSize_Au = 21; //Ore Generation, keep odd, should be 7x the sigma value
 	public static float kernelSigma_Au = 3f;
-	public static int numElements = 2;
 
 	public static float GetTerrianHeight (int x, int z)
     {
