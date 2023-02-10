@@ -31,6 +31,7 @@ public class PlayerMovement : MonoBehaviour
     public Interactable focus;
 
     public float volume = 0f;
+    public float[] volumes = new float[GameData.numElements + 1];
 
     private void Start()
     {
@@ -38,6 +39,11 @@ public class PlayerMovement : MonoBehaviour
         //this.EditSphere = new GameObject();
         this.EditSphere = Instantiate(EditSpherePrefab, Vector3.zero, Quaternion.identity);
         this.EditSphere.transform.localScale = editScale * Vector3.one;
+
+        for (int i = 0; i < volumes.Length; i++)
+        {
+            volumes[i] = 0.0f;
+        }
     }
 
     // Update is called once per frame
@@ -145,9 +151,14 @@ public class PlayerMovement : MonoBehaviour
                         if (Input.GetMouseButtonDown(0))
                         {
                             //Debug.Log(string.Format("Hit Position: {0}, {1}, {2} ", hit.transform.position.x, hit.transform.position.y, hit.transform.position.z));
-                            float deltaVol = world.HandleModifyTerrain(hit.point, editScale, 0);
+                            var deltaVol = world.HandleModifyTerrain(hit.point, editScale, 0);
 
-                            volume = volume + deltaVol; //deltaVol should come through as negative here
+                            volume = volume + deltaVol.Item1; //deltaVol should come through as negative here
+
+                            for (int i = 0; i < volumes.Length; i++)
+                            {
+                                volumes[i] = volumes[i] + deltaVol.Item2[i];
+                            }
                         }
 
                         // Left click to edit and remove terrain
@@ -158,9 +169,14 @@ public class PlayerMovement : MonoBehaviour
                             //Edit terrain at every vertex position within the Edit Sphere position
                             //float deltaVol = hit.transform.GetComponent<Chunk>().RemoveManyTerrain(hit.point, editScale); //won't work wihtou Chunk being MonoBehavior
                             //float deltaVol = world.GetChunkFromVector3(hit.transform.position).RemoveManyTerrain(hit.point, editScale);
-                            float deltaVol = world.HandleModifyTerrain(hit.point, editScale, 1);
+                            var deltaVol = world.HandleModifyTerrain(hit.point, editScale, 1);
 
-                            volume = volume + deltaVol;
+                            volume = volume + deltaVol.Item1;
+
+                            for (int i = 0; i < volumes.Length; i++)
+                            {
+                                volumes[i] = volumes[i] + deltaVol.Item2[i];
+                            }
                         }
                     }
                     else
