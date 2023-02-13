@@ -69,6 +69,8 @@ public class TextureArrayInitialization : MonoBehaviour
         //    .sharedMaterial.SetTexture("_MainTex", texture2DArray);
 
         //Save asset
+#if UNITY_EDITOR //only use this code IF we are in the editor, othewise it will break when trying to build this project
         AssetDatabase.CreateAsset(texture2DArray, "Assets/Resources/Textures/TextureArray.asset");
+#endif
     }
 }
