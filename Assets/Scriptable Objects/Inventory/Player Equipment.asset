@@ -18,16 +18,12 @@ MonoBehaviour:
     Items:
     - AllowedItems: 01000000
       parent: {fileID: 0}
-      ID: 3
+      ID: -1
       item:
-        Name: Sword
-        Id: 3
-        buffs:
-        - attribute: 3
-          value: 17
-          min: 10
-          max: 20
-      amount: 1
+        Name: 
+        Id: -1
+        buffs: []
+      amount: 0
     - AllowedItems: 02000000
       parent: {fileID: 0}
       ID: -1

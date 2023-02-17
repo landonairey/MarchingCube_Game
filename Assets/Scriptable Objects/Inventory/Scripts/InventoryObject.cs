@@ -175,6 +175,7 @@ public class InventorySlot
     }
     public bool CanPlaceInSlot(ItemObject _item)
     {
+        Debug.Log("CanPlaceInSlot HERE");
         if (AllowedItems.Length <= 0)
         {
             Debug.Log("AllowedItems.Length" + AllowedItems.Length.ToString());

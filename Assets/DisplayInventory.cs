@@ -160,6 +160,7 @@ public class DisplayInventory : MonoBehaviour
     }
     public void OnDragEnd(GameObject obj)
     {
+        Debug.Log("DisplayInventory OnDragEnd");
         if (mouseItem.hoverObj) //if the slot exists and is not null then the mouse if over a slot that the item can go into, this has to reach into our system
         {
             inventory.MoveItem(itemsDisplayed[obj], itemsDisplayed[mouseItem.hoverObj]);

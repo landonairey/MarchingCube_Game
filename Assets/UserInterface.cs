@@ -22,6 +22,8 @@ public abstract class UserInterface : MonoBehaviour //we will always either use 
             inventory.Container.Items[i].parent = this; //link all items in the database to this interface as the parent so we can figure out which interface an inventory slot and items belongs to
         }
         CreateSlots();
+        AddEvent(gameObject, EventTriggerType.PointerEnter, delegate { OnEnterInterface(gameObject); });
+        AddEvent(gameObject, EventTriggerType.PointerExit, delegate { OnExitInterface(gameObject); });
     }
 
     // Update is called once per frame
@@ -105,6 +107,19 @@ public abstract class UserInterface : MonoBehaviour //we will always either use 
         player.mouseItem.hoverObj = null;
         player.mouseItem.hoverItem = null;
     }
+
+    public void OnEnterInterface(GameObject obj)
+    {
+        //Setup the UI that's on the player's item mouse
+        player.mouseItem.ui = obj.GetComponent<UserInterface>();
+    }
+
+    public void OnExitInterface(GameObject obj)
+    {
+        //Un-Setup the UI that's on the player's item mouse
+        player.mouseItem.ui = null;
+    }
+
     public void OnDragStart(GameObject obj)
     {
         //visual representation of you clicking and dragging an item around the UI, the inventory system won't change until the move gesture is completed
@@ -130,14 +145,18 @@ public abstract class UserInterface : MonoBehaviour //we will always either use 
         var mouseHoverObj = itemOnMouse.hoverObj;
         var getItemObject = inventory.database.GetItem; //links it to the dictionary that's on the interface
 
-        if (mouseHoverObj) //if the slot exists and is not null then the mouse if over a slot that the item can go into, this has to reach into our system
+        if (itemOnMouse.ui != null)
         {
-            if (mouseHoverItem.CanPlaceInSlot(getItemObject[itemsDisplayed[obj].ID])); //Check if the item on the mouse and drop into the inventroy slot, i.e. if is the same type
+            if (mouseHoverObj) //if the slot exists and is not null then the mouse if over a slot that the item can go into, this has to reach into our system
             {
-                Debug.Log("HERE OnDragEnd");
-                inventory.MoveItem(itemsDisplayed[obj], mouseHoverItem.parent.itemsDisplayed[mouseHoverObj]); //hoverObj is the object we clicked on and are about to drop. Changed to access this overobj from the moust item's parent
+                //Check if the item on the mouse and drop into the inventroy slot, i.e. if is the same type
+                //Additional checks: if there's not an item it's fine to swap, if there is an item you need to make sure the item your swaping with can go into the slot
+                if (mouseHoverItem.CanPlaceInSlot(getItemObject[itemsDisplayed[obj].ID]) && (mouseHoverItem.item.Id <= -1 || (mouseHoverItem.item.Id >= 0 && itemsDisplayed[obj].CanPlaceInSlot(getItemObject[mouseHoverItem.item.Id]))))
+                {
+                    //Debug.Log("UserInterface OnDragEnd");
+                    inventory.MoveItem(itemsDisplayed[obj], mouseHoverItem.parent.itemsDisplayed[mouseHoverObj]); //hoverObj is the object we clicked on and are about to drop. Changed to access this overobj from the moust item's parent
+                }
             }
-
         }
         else //the mouse is hovering over an invalid position
         {
@@ -161,6 +180,7 @@ public abstract class UserInterface : MonoBehaviour //we will always either use 
 //separate class to have a reference to the mouse UI item so that all the button trigger methods can interact with it 
 public class MouseItem
 {
+    public UserInterface ui;
     public GameObject obj;
     public InventorySlot item;
     public InventorySlot hoverItem;
